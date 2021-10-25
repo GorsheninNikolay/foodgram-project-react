@@ -1,14 +1,8 @@
 from django.urls import include, path
-from rest_framework import routers
-from users.auth_token import AuthToken
-from users.views import ChangePasswordView, UserViewSet
-
-router = routers.DefaultRouter()
-router.register('users', UserViewSet, basename='users')
+from users.auth_token import AuthLogin, AuthLogout
 
 urlpatterns = [
-    path('users/set_password/', ChangePasswordView.as_view()),
-    path('auth/token/login/', AuthToken.as_view())
+    path('users/', include('users.urls')),
+    path('auth/token/login/', AuthLogin.as_view()),
+    path('auth/token/logout/', AuthLogout.as_view()),
 ]
-
-urlpatterns += router.urls

@@ -1,12 +1,11 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
-from rest_framework.decorators import action
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import User
-from .serializers import PasswordSerializer, UserSerializer
+from .models import Follow, User
+from .serializers import FollowSerializer, PasswordSerializer, UserSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -17,7 +16,36 @@ class UserViewSet(viewsets.ModelViewSet):
         if (self.kwargs.get('pk') is not None
                 and not self.request.user.is_authenticated):
             raise NotAuthenticated()
+        if self.kwargs.get('pk') == 'me':
+            self.kwargs['pk'] = self.request.user.id
         return User.objects.all()
+
+
+class FollowView(viewsets.ModelViewSet):
+    model = Follow
+    serializer_class = FollowSerializer
+    permission_class = IsAuthenticated
+
+    def get_queryset(self):
+        return Follow.objects.all()
+
+
+class GetFollowView(generics.UpdateAPIView):
+    model = Follow
+    serializer_class = FollowSerializer
+    permission_class = IsAuthenticated
+
+    def get(self, request, id=None):
+        Follow.objects.create(
+            user=request.user, following=User.objects.get(id=id)
+        )
+        return Response(status=status.HTTP_201_CREATED)
+
+    def delete(self, request, id=None):
+        follow = Follow.objects.get(user=request.user,
+                                    following=User.objects.get(id=id))
+        follow.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChangePasswordView(generics.UpdateAPIView):

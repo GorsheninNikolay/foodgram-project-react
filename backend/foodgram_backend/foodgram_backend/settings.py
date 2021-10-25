@@ -73,6 +73,8 @@ DATABASES = {
     }
 }
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
@@ -112,3 +114,4 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+
