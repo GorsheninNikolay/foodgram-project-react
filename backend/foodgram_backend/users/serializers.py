@@ -2,15 +2,15 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework.validators import UniqueTogetherValidator
 
-from users.models import User
-
-from .models import Follow
+from .models import Follow, User
 
 
 class UserSerializer(ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(default=False)
 
     def get_is_subscribed(self, obj) -> bool:
+        if not self.context['request'].user.is_authenticated:
+            return False
         user = User.objects.get(username=self.context['request'].user)
         following = User.objects.get(username=obj)
         follow = Follow.objects.filter(user=user, following=following).exists()

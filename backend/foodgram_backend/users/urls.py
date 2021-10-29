@@ -1,7 +1,6 @@
-from django.urls import include, path
+from django.urls import path
 from rest_framework import routers
 
-from .auth_token import AuthLogin, AuthLogout
 from .views import ChangePasswordView, FollowView, GetFollowView, UserViewSet
 
 router = routers.DefaultRouter()
