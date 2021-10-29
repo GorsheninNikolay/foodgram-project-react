@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -15,7 +16,10 @@ class AuthLogin(APIView):
             User, email=request.data.get('email'),
             password=request.data.get('password')
         )
-        token = Token.objects.create(user=user)
+        try:
+            token = Token.objects.create(user=user)
+        except IntegrityError:
+            return Response({'token': str(Token.objects.get(user=user).key)})
         response = {'token': str(token.key)}
         return Response(response, status=status.HTTP_201_CREATED)
 

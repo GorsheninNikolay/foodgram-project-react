@@ -29,11 +29,14 @@ class Recipe(models.Model):
     author = models.ForeignKey(User, on_delete=models.SET_NULL,
                                related_name='recepts',
                                null=True, verbose_name='Автор публикации')
-    name = models.CharField(max_length=200, verbose_name='Название')
-    image = models.ImageField(verbose_name='Картинка')
+    name = models.CharField(
+        max_length=200, unique=True, verbose_name='Название'
+        )
+    image = models.ImageField(
+        upload_to='images/', verbose_name='Картинка'
+        )
     text = models.TextField(verbose_name='Описание')
-    tag = models.ForeignKey(Tag, on_delete=models.SET_NULL,
-                            verbose_name='Тег', null=True)
+    tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(
         Ingredient, through='RecipeIngredient'
     )
@@ -48,7 +51,9 @@ class Recipe(models.Model):
 
 
 class RecipeIngredient(models.Model):
-    name = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    name = models.ForeignKey(
+        Ingredient, on_delete=models.CASCADE
+        )
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(
         validators=[MinValueValidator(
@@ -57,12 +62,20 @@ class RecipeIngredient(models.Model):
         verbose_name='Количество'
         )
 
+    def __str__(self):
+        return '%s: %d' % (self.name, self.amount)
 
-class Favorite(models.Models):
-    favorite = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+
+class Favorite(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     pub_date = models.DateTimeField('date published',
                                     auto_now_add=True)
 
     class Meta:
         ordering = ['-pub_date', ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'user'], name='unique_favorite'
+            ),
+        ]
