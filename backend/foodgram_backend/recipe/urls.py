@@ -4,7 +4,8 @@ from users.auth_token import AuthLogin, AuthLogout
 
 from recipe.views import IngredientViewSet, TagViewSet
 
-from .views import FavoriteView, IngredientViewSet, RecipeViewSet
+from .views import (FavoriteView, IngredientViewSet, RecipeViewSet,
+                    ShoppingCartView)
 
 router = routers.DefaultRouter()
 router.register('recipes', RecipeViewSet)
@@ -20,6 +21,9 @@ urlpatterns = [
     path('tags/', TagViewSet.as_view({'get': 'list'})),
     path('tags/<int:id>', TagViewSet.as_view({'get': 'retrieve'})),
     path('recipes/<int:id>/favorite/', FavoriteView.as_view()),
+    path('recipes/<int:id>/shopping_cart/', ShoppingCartView.as_view(
+        {'get': 'retrieve', 'delete': 'delete'}
+    )),
 ]
 
 urlpatterns += router.urls

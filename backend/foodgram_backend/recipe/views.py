@@ -1,15 +1,14 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
-from rest_framework.decorators import api_view
-from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .exceptions import UniqueObjectsException
-from .models import Favorite, Ingredient, Recipe, Tag
+from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import (FavoriteSerializer, IngredientSerializer,
-                          RecipeSerializer, TagSerializer)
+                          RecipeSerializer, ShoppingCartSerailizer,
+                          TagSerializer)
 
 
 class IngredientViewSet(viewsets.ViewSet):
@@ -49,7 +48,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class FavoriteView(generics.UpdateAPIView):
     model = Favorite
     serializer_class = FavoriteSerializer
-    permission_class = IsAuthenticated
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, id=None):
         recipe = Recipe.objects.get(id=id)
@@ -59,10 +58,36 @@ class FavoriteView(generics.UpdateAPIView):
             user=request.user, recipe=recipe
         )
         serializer = FavoriteSerializer(favorite)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors)
 
     def delete(self, request, id=None):
-        favorite = Favorite.objects.get(user=request.user,
-                                        recipe=Recipe.objects.get(id=id))
+        favorite = get_object_or_404(
+            Favorite, user=request.user, recipe=Recipe.objects.get(id=id)
+            )
         favorite.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ShoppingCartView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, id=None):
+        recipe = get_object_or_404(Recipe, id=id)
+        if ShoppingCart.objects.filter(
+            author=request.user, recipe=recipe).exists():
+            raise UniqueObjectsException
+        shopping_cart = ShoppingCart.objects.create(
+            author=request.user,
+            recipe=recipe
+        )
+        serializer = ShoppingCartSerailizer(shopping_cart)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, id=None):
+        shopping_cart = get_object_or_404(
+            ShoppingCart, recipe=get_object_or_404(Recipe, id=id)
+            )
+        shopping_cart.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -79,3 +79,15 @@ class Favorite(models.Model):
                 fields=['recipe', 'user'], name='unique_favorite'
             ),
         ]
+
+
+class ShoppingCart(models.Model):
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'recipe'], name='unique_shoppingcart'
+            )
+        ]

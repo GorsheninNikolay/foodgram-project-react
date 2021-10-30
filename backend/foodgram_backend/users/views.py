@@ -1,15 +1,15 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Follow, User
-from .serializers import FollowSerializer, PasswordSerializer, UserSerializer
+from .serializers import PasswordSerializer, UserSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
-    permission_class = IsAuthenticated
 
     def get_queryset(self):
         if (self.kwargs.get('pk') is not None
@@ -21,28 +21,28 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class FollowView(viewsets.ModelViewSet):
-    model = Follow
-    serializer_class = FollowSerializer
-    permission_class = IsAuthenticated
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+    queryset = Follow.objects.all()
 
-    def get_queryset(self):
-        return Follow.objects.all()
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs).filter(
+                user=self.request.user
+            )
+        followings = [user.following for user in queryset]
+        queryset = User.objects.filter(username__in=followings)
+        return queryset
 
-
-class GetFollowView(generics.UpdateAPIView):
-    model = Follow
-    serializer_class = FollowSerializer
-    permission_class = IsAuthenticated
-
-    def get(self, request, id=None):
+    def retrieve(self, request, id=None):
         Follow.objects.create(
             user=request.user, following=User.objects.get(id=id)
         )
         return Response(status=status.HTTP_201_CREATED)
 
-    def delete(self, request, id=None):
-        follow = Follow.objects.get(user=request.user,
-                                    following=User.objects.get(id=id))
+    def destroy(self, request, id=None):
+        follow = get_object_or_404(
+            Follow, user=request.user, following=User.objects.get(id=id)
+            )
         follow.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -50,7 +50,7 @@ class GetFollowView(generics.UpdateAPIView):
 class ChangePasswordView(generics.UpdateAPIView):
     serializer_class = PasswordSerializer
     model = User
-    permission_class = IsAuthenticated
+    permission_class = [IsAuthenticated]
 
     def get_object(self, queryset=None):
         obj = self.request.user
@@ -67,12 +67,6 @@ class ChangePasswordView(generics.UpdateAPIView):
                     status=status.HTTP_400_BAD_REQUEST)
             self.object.password = serializer.data.get('new_password')
             self.object.save()
-            response = {
-                'status': 'Success',
-                'code': status.HTTP_200_OK,
-                'message': 'Ваш пароль успешно изменен'
-            }
-
-            return Response(response)
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

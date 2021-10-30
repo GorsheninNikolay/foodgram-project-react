@@ -10,6 +10,9 @@ class User(AbstractUser):
     password = models.CharField(max_length=150)
     is_subscribed = models.BooleanField(default=False)
 
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self):
         return self.username
 
@@ -23,6 +26,7 @@ class Follow(models.Model):
     )
 
     class Meta:
+        ordering = ['-id']
         constraints = [
             models.CheckConstraint(
                 check=~models.Q(user=models.F('following')),
