@@ -1,19 +1,19 @@
 from django.urls import include, path
 from rest_framework import routers
-from users.auth_token import AuthLogin, AuthLogout
-
-from recipe.views import IngredientViewSet, TagViewSet
+from users.auth_token import Authenticator
 
 from .views import (FavoriteView, IngredientViewSet, RecipeViewSet,
-                    ShoppingCartView)
+                    ShoppingCartView, TagViewSet)
 
 router = routers.DefaultRouter()
 router.register('recipes', RecipeViewSet)
 
 urlpatterns = [
-    path('users/', include('users.urls')),
-    path('auth/token/login/', AuthLogin.as_view()),
-    path('auth/token/logout/', AuthLogout.as_view()),
+    path('users/', include('users.urls'), name='users'),
+    path('auth/token/login/', Authenticator.as_view(
+        {'post': 'login'}), name='login'),
+    path('auth/token/logout/', Authenticator.as_view(
+        {'post': 'logout'}), name='logout'),
     path('ingredients/', IngredientViewSet.as_view({'get': 'list'})),
     path('ingredients/<int:id>/', IngredientViewSet.as_view(
         {'get': 'retrieve'})
