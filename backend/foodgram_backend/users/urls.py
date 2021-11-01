@@ -7,9 +7,9 @@ router = routers.DefaultRouter()
 router.register('', UserViewSet, basename='users')
 
 urlpatterns = [
-    path('set_password/', ChangePasswordView.as_view()),
-    path('subscriptions/', FollowView.as_view({'get': 'list'})),
-    path('<int:id>/subscribe/', FollowView.as_view(
+    path(r'set_password/', ChangePasswordView.as_view()),
+    path(r'subscriptions/', FollowView.as_view({'get': 'list'})),
+    path(r'<int:id>/subscribe/', FollowView.as_view(
         {'get': 'retrieve', 'delete': 'destroy'})),
 ]
 

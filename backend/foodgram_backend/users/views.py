@@ -34,10 +34,12 @@ class FollowView(viewsets.ModelViewSet):
         return queryset
 
     def retrieve(self, request, id=None):
-        Follow.objects.create(
+        follow = Follow.objects.create(
             user=request.user, following=User.objects.get(id=id)
         )
-        return Response(status=status.HTTP_201_CREATED)
+        user = get_object_or_404(User, id=follow.following.id)
+        serializer = UserSerializer(user, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, id=None):
         follow = get_object_or_404(

@@ -1,7 +1,8 @@
-from django.test import TestCase
+from django.db import IntegrityError, transaction
+from recipe.exceptions import SubscribeOnYourSelf, UniqueObjectDoesntWork
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.test import APIClient, APIRequestFactory, APITestCase
+from rest_framework.test import APIClient, APITestCase
 from users.models import Follow, User
 
 
@@ -49,33 +50,34 @@ class UserTestCase(APITestCase):
         self.unathorized_client.credentials()
 
     def test_list_of_users(self):
-        response = self.client.get('/api/users/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        unauth_response = self.unathorized_client.get(r'/api/users/')
+        auth_response = self.client.get(r'/api/users/')
+        self.assertEqual(unauth_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(auth_response.status_code, status.HTTP_200_OK)
 
     def test_list_of_users_by_unathorized_client(self):
-        self.client.credentials()
-        response = self.client.get('/api/users/')
+        response = self.unathorized_client.get(r'/api/users/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_registration(self):
-        response = self.client.post('/api/users/', self.data)
+        response = self.client.post(r'/api/users/', self.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.all().count(), 3)
 
     def test_profile(self):
-        response = self.client.get('/api/users/me/')
+        response = self.client.get(r'/api/users/me/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], 1)
         self.assertEqual(response.data['username'], 'tester')
         self.assertNotEqual(response.data['username'], 'vasya.pupkin')
 
     def test_profile_another_person(self):
-        response = self.client.get('/api/users/2/')
+        response = self.client.get(r'/api/users/2/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], 2)
 
     def test_profile_unathorized_client(self):
-        response = self.unathorized_client.get('/api/users/me/')
+        response = self.unathorized_client.get(r'/api/users/me/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_set_password(self):
@@ -84,24 +86,64 @@ class UserTestCase(APITestCase):
             'new_password': 'new',
             'current_password': 'test'
         }
-        response = self.client.post('/api/users/set_password/', passwords)
+        response = self.client.post(r'/api/users/set_password/', passwords)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertNotEqual(old_password, User.objects.get(id=1).password)
 
     def test_get_token(self):
-        self.client.post('/api/users/', self.data)
+        self.client.post(r'/api/users/', self.data)
         email_password = {
             'email': self.data['email'],
             'password': self.data['password']
         }
-        response = self.client.post('/api/auth/token/login/', email_password)
+        response = self.client.post(r'/api/auth/token/login/', email_password)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.all().count(), 3)
         self.assertEqual(Token.objects.all().count(), 3)
 
     def test_delete_token_by_owner(self):
-        response = self.client.post('/api/auth/token/logout/', self.data)
+        response = self.client.post(r'/api/auth/token/logout/', self.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Token.objects.all().count(), 1)
 
-#    def test_subscriptions(self):
+    def test_subscribe(self):
+        response = self.client.get(r'/api/users/2/subscribe/')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Follow.objects.all().count(), 1)
+        self.assertTrue(Follow.objects.filter(
+            user__username='tester', following__username='another').exists()
+            )
+        self.assertEqual(response.data['email'], 'another@yandex.ru')
+        self.assertTrue(response.data['is_subscribed'])
+
+    def test_double_subscribe(self):
+        response = self.client.get(r'/api/users/2/subscribe/')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Follow.objects.all().count(), 1)
+        try:
+            with transaction.atomic():
+                response = self.client.get(r'/api/users/2/subscribe/')
+        except IntegrityError:
+            self.assertEqual(Follow.objects.all().count(), 1)
+        else:
+            raise UniqueObjectDoesntWork
+
+    def test_subscribe_on_yourself(self):
+        try:
+            with transaction.atomic():
+                self.client.get(r'/api/users/1/subscribe/')
+        except IntegrityError:
+            self.assertEqual(Follow.objects.all().count(), 0)
+        else:
+            raise SubscribeOnYourSelf
+
+    def test_unsubscribe(self):
+        response = self.client.get(r'/api/users/2/subscribe/')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Follow.objects.all().count(), 1)
+        response = self.client.delete(r'/api/users/2/subscribe/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Follow.objects.all().count(), 0)
+        self.assertFalse(Follow.objects.filter(
+            user__username='tester', following__username='another').exists()
+            )

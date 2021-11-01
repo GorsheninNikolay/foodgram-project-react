@@ -1,14 +1,14 @@
-import base64
-
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework.validators import UniqueTogetherValidator
 from users.models import User
-from users.serializers import UserSerializer
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
+
+# from users.serializers import UserSerializer
+
 
 
 class TagSerializer(ModelSerializer):
@@ -64,22 +64,26 @@ class RecipeSerializer(ModelSerializer):
     tags = TagSerializer(many=True)
     ingredients = RecipeIngredientSerializer(many=True)
     is_favorited = serializers.SerializerMethodField()
-    # image = serializers.SerializerMethodField()
-
-    # def get_image(self, obj):
-    #     return base64.decodestring(obj.image)
+    is_in_shopping_cart = serializers.SerializerMethodField()
 
     def get_is_favorited(self, obj) -> bool:
         if not self.context['request'].user.is_authenticated:
             return False
         user = get_object_or_404(User, username=self.context['request'].user)
-        favorite = Favorite.objects.filter(user=user, recipe=obj).exists()
-        return favorite
+        return Favorite.objects.filter(user=user, recipe=obj).exists()
+
+    def get_is_in_shopping_cart(self, obj) -> bool:
+        if not self.context['request'].user.is_authenticated:
+            return False
+        return ShoppingCart.objects.filter(
+            author=self.context['request'].user, recipe=obj
+            ).exists()
 
     class Meta:
         model = Recipe
         fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited',
-                  'name', 'image', 'text', 'cooking_time')
+                  'is_in_shopping_cart', 'name',
+                  'image', 'text', 'cooking_time')
 
 
 class ShoppingCartSerailizer(serializers.ModelSerializer):

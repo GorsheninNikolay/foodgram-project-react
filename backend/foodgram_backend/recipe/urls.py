@@ -9,19 +9,19 @@ router = routers.DefaultRouter()
 router.register('recipes', RecipeViewSet)
 
 urlpatterns = [
-    path('users/', include('users.urls'), name='users'),
-    path('auth/token/login/', Authenticator.as_view(
+    path(r'users/', include('users.urls'), name='users'),
+    path(r'auth/token/login/', Authenticator.as_view(
         {'post': 'login'}), name='login'),
-    path('auth/token/logout/', Authenticator.as_view(
+    path(r'auth/token/logout/', Authenticator.as_view(
         {'post': 'logout'}), name='logout'),
-    path('ingredients/', IngredientViewSet.as_view({'get': 'list'})),
-    path('ingredients/<int:id>/', IngredientViewSet.as_view(
+    path(r'ingredients/', IngredientViewSet.as_view({'get': 'list'})),
+    path(r'ingredients/<int:id>/', IngredientViewSet.as_view(
         {'get': 'retrieve'})
         ),
-    path('tags/', TagViewSet.as_view({'get': 'list'})),
-    path('tags/<int:id>', TagViewSet.as_view({'get': 'retrieve'})),
-    path('recipes/<int:id>/favorite/', FavoriteView.as_view()),
-    path('recipes/<int:id>/shopping_cart/', ShoppingCartView.as_view(
+    path(r'tags/', TagViewSet.as_view({'get': 'list'})),
+    path(r'tags/<int:id>/', TagViewSet.as_view({'get': 'retrieve'})),
+    path(r'recipes/<int:id>/favorite/', FavoriteView.as_view()),
+    path(r'recipes/<int:id>/shopping_cart/', ShoppingCartView.as_view(
         {'get': 'retrieve', 'delete': 'delete'}
     )),
 ]
