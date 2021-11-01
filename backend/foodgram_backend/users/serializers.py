@@ -8,7 +8,8 @@ class UserSerializer(ModelSerializer):
     is_subscribed = serializers.SerializerMethodField(default=False)
 
     def get_is_subscribed(self, obj) -> bool:
-        if not self.context['request'].user.is_authenticated:
+        user = self.context.get('request').user
+        if user is None or not user.is_authenticated:
             return False
         user = User.objects.get(username=self.context['request'].user)
         following = User.objects.get(username=obj.username)

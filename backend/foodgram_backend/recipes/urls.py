@@ -5,8 +5,8 @@ from users.auth_token import Authenticator
 from .views import (FavoriteView, IngredientViewSet, RecipeViewSet,
                     ShoppingCartView, TagViewSet)
 
-router = routers.DefaultRouter()
-router.register('recipes', RecipeViewSet)
+router = routers.SimpleRouter()
+router.register(r'recipes', RecipeViewSet)
 
 urlpatterns = [
     path(r'users/', include('users.urls'), name='users'),

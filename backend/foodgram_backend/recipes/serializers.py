@@ -1,3 +1,5 @@
+import base64
+
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
@@ -6,9 +8,6 @@ from users.models import User
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
-
-# from users.serializers import UserSerializer
-
 
 
 class TagSerializer(ModelSerializer):
@@ -41,13 +40,13 @@ class FavoriteSerializer(ModelSerializer):
     cooking_time = serializers.SerializerMethodField()
 
     def get_name(self, obj) -> str:
-        return str(obj.recipe.name)
+        return obj.recipe.name
 
     def get_image(self, obj) -> str:
-        return str(obj.recipe.image.url)
+        return obj.recipe.image.url
 
     def get_cooking_time(self, obj) -> str:
-        return str(obj.recipe.cooking_time)
+        return obj.recipe.cooking_time
 
     class Meta:
         model = Favorite
@@ -61,29 +60,35 @@ class FavoriteSerializer(ModelSerializer):
 
 
 class RecipeSerializer(ModelSerializer):
-    tags = TagSerializer(many=True)
-    ingredients = RecipeIngredientSerializer(many=True)
+    tags = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    author = serializers.PrimaryKeyRelatedField(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
     def get_is_favorited(self, obj) -> bool:
-        if not self.context['request'].user.is_authenticated:
+        user = self.context.get('request').user
+        if user is None or not user.is_authenticated:
             return False
         user = get_object_or_404(User, username=self.context['request'].user)
         return Favorite.objects.filter(user=user, recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj) -> bool:
-        if not self.context['request'].user.is_authenticated:
+        user = self.context.get('request').user
+        if user is None or not user.is_authenticated:
             return False
         return ShoppingCart.objects.filter(
             author=self.context['request'].user, recipe=obj
             ).exists()
+
+    # def get_image(self, obj) -> 'image':
+    #     return base64.b64decode(obj.image)
 
     class Meta:
         model = Recipe
         fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited',
                   'is_in_shopping_cart', 'name',
                   'image', 'text', 'cooking_time')
+        read_only_fields = ('author', 'image', 'ingredients', 'tags', )
 
 
 class ShoppingCartSerailizer(serializers.ModelSerializer):

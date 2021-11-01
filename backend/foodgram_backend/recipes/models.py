@@ -12,6 +12,9 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['id', ]
+
 
 class Ingredient(models.Model):
     name = models.CharField(
@@ -23,6 +26,9 @@ class Ingredient(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ['-id', ]
 
 
 class Recipe(models.Model):
@@ -36,9 +42,9 @@ class Recipe(models.Model):
         upload_to='images/', verbose_name='Картинка'
         )
     text = models.TextField(verbose_name='Описание')
-    tags = models.ManyToManyField(Tag)
+    tags = models.ManyToManyField(Tag, related_name='recepts')
     ingredients = models.ManyToManyField(
-        Ingredient, through='RecipeIngredient'
+        Ingredient, through='RecipeIngredient', related_name='recepts'
     )
     cooking_time = models.PositiveIntegerField(
         validators=[MinValueValidator(
@@ -49,9 +55,12 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['-id', ]
+
 
 class RecipeIngredient(models.Model):
-    name = models.ForeignKey(
+    ingredient = models.ForeignKey(
         Ingredient, on_delete=models.CASCADE
         )
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
@@ -69,7 +78,7 @@ class RecipeIngredient(models.Model):
 class Favorite(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    pub_date = models.DateTimeField('date published',
+    pub_date = models.DateTimeField('Время публикации',
                                     auto_now_add=True)
 
     class Meta:

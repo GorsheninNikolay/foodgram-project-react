@@ -1,10 +1,16 @@
+import base64
+import os
+
 from django.shortcuts import get_object_or_404
+from foodgram_backend.settings import MEDIA_ROOT
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from users.serializers import UserSerializer
 
 from .exceptions import UniqueObjectsException
-from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                     ShoppingCart, Tag)
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import (FavoriteSerializer, IngredientSerializer,
                           RecipeSerializer, ShoppingCartSerailizer,
@@ -41,8 +47,20 @@ class TagViewSet(viewsets.ViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
     serializer_class = RecipeSerializer
+    permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        root = MEDIA_ROOT + r'\images'
+        os.chdir(root)
+        with open(str(self.request.data['name']) + '.jpg', 'wb') as f:
+            f.write(base64.b64decode(self.request.data['image']))
+        tags = Tag.objects.filter(id__in=self.request.data['tags'])
+        serializer.save(
+            author=self.request.user,
+            tags=tags,
+            image=root + chr(47) + self.request.data['name'] + '.jpg'
+            )
 
 
 class FavoriteView(generics.UpdateAPIView):
@@ -76,7 +94,8 @@ class ShoppingCartView(viewsets.ViewSet):
     def retrieve(self, request, id=None):
         recipe = get_object_or_404(Recipe, id=id)
         if ShoppingCart.objects.filter(
-            author=request.user, recipe=recipe).exists():
+            author=request.user, recipe=recipe
+            ).exists():
             raise UniqueObjectsException
         shopping_cart = ShoppingCart.objects.create(
             author=request.user,
