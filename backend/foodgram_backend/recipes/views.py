@@ -6,11 +6,9 @@ from foodgram_backend.settings import MEDIA_ROOT
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from users.serializers import UserSerializer
 
 from .exceptions import UniqueObjectsException
-from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                     ShoppingCart, Tag)
+from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import (FavoriteSerializer, IngredientSerializer,
                           RecipeSerializer, ShoppingCartSerailizer,
@@ -55,11 +53,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         os.chdir(root)
         with open(str(self.request.data['name']) + '.jpg', 'wb') as f:
             f.write(base64.b64decode(self.request.data['image']))
-        tags = Tag.objects.filter(id__in=self.request.data['tags'])
         serializer.save(
             author=self.request.user,
-            tags=tags,
-            image=root + chr(47) + self.request.data['name'] + '.jpg'
+            image=(MEDIA_ROOT + r'\images' +
+                   chr(47) + self.request.data['name'] + '.jpg')
             )
 
 
@@ -95,7 +92,7 @@ class ShoppingCartView(viewsets.ViewSet):
         recipe = get_object_or_404(Recipe, id=id)
         if ShoppingCart.objects.filter(
             author=request.user, recipe=recipe
-            ).exists():
+                ).exists():
             raise UniqueObjectsException
         shopping_cart = ShoppingCart.objects.create(
             author=request.user,

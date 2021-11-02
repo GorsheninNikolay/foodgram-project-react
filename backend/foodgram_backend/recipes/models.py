@@ -36,13 +36,13 @@ class Recipe(models.Model):
                                related_name='recepts',
                                null=True, verbose_name='Автор публикации')
     name = models.CharField(
-        max_length=200, unique=True, verbose_name='Название'
+        max_length=200, verbose_name='Название'
         )
     image = models.ImageField(
         upload_to='images/', verbose_name='Картинка'
         )
     text = models.TextField(verbose_name='Описание')
-    tags = models.ManyToManyField(Tag, related_name='recepts')
+    tags = models.ManyToManyField(Tag, related_name='tags')
     ingredients = models.ManyToManyField(
         Ingredient, through='RecipeIngredient', related_name='recepts'
     )
@@ -51,6 +51,9 @@ class Recipe(models.Model):
             1, message='Время приготовления больше минуты'
         )],
         verbose_name='Время приготовления в минутах')
+
+    def ingredients_set(self):
+        return RecipeIngredient.objects.filter(recipe=self)
 
     def __str__(self):
         return self.name
@@ -72,7 +75,7 @@ class RecipeIngredient(models.Model):
         )
 
     def __str__(self):
-        return '%s: %d' % (self.name, self.amount)
+        return '%s: %d' % (self.ingredient.name, self.amount)
 
 
 class Favorite(models.Model):

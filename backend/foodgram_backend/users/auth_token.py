@@ -23,7 +23,7 @@ class Authenticator(viewsets.ViewSet):
             token = Token.objects.create(user=user)
         except IntegrityError:
             return Response({'token': str(Token.objects.get(user=user).key)})
-        response = {'token': str(token.key)}
+        response = {'auth_token': str(token.key)}
         return Response(response, status=status.HTTP_201_CREATED)
 
     def logout(self, request):
