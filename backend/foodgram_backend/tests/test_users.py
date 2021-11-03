@@ -1,5 +1,5 @@
 from django.db import IntegrityError, transaction
-from recipe.exceptions import SubscribeOnYourSelf, UniqueObjectDoesntWork
+from recipes.exceptions import SubscribeOnYourSelf, UniqueObjectDoesntWork
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
@@ -60,7 +60,7 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_registration(self):
-        response = self.client.post(r'/api/users/', self.data)
+        response = self.client.post(r'/api/users/', self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.all().count(), 3)
 
@@ -86,23 +86,25 @@ class UserTestCase(APITestCase):
             'new_password': 'new',
             'current_password': 'test'
         }
-        response = self.client.post(r'/api/users/set_password/', passwords)
+        response = self.client.post(
+            r'/api/users/set_password/', passwords, format='json'
+            )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertNotEqual(old_password, User.objects.get(id=1).password)
 
     def test_get_token(self):
-        self.client.post(r'/api/users/', self.data)
+        self.client.post(r'/api/users/', self.data, format='json')
         email_password = {
             'email': self.data['email'],
             'password': self.data['password']
         }
-        response = self.client.post(r'/api/auth/token/login/', email_password)
+        response = self.client.post(r'/api/auth/token/login/', email_password, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.all().count(), 3)
         self.assertEqual(Token.objects.all().count(), 3)
 
     def test_delete_token_by_owner(self):
-        response = self.client.post(r'/api/auth/token/logout/', self.data)
+        response = self.client.post(r'/api/auth/token/logout/', self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Token.objects.all().count(), 1)
 

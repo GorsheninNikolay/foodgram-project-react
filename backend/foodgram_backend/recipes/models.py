@@ -36,7 +36,7 @@ class Recipe(models.Model):
                                related_name='recepts',
                                null=True, verbose_name='Автор публикации')
     name = models.CharField(
-        max_length=200, verbose_name='Название'
+        max_length=200, unique=True, verbose_name='Название'
         )
     image = models.ImageField(
         upload_to='images/', verbose_name='Картинка'
@@ -52,6 +52,9 @@ class Recipe(models.Model):
         )],
         verbose_name='Время приготовления в минутах')
 
+    is_favorited = models.BooleanField(default=False)
+    is_in_shopping_cart = models.BooleanField(default=False)
+
     def ingredients_set(self):
         return RecipeIngredient.objects.filter(recipe=self)
 
@@ -60,6 +63,8 @@ class Recipe(models.Model):
 
     class Meta:
         ordering = ['-id', ]
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
 
 
 class RecipeIngredient(models.Model):

@@ -1,7 +1,7 @@
-import base64
 import os
 
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from foodgram_backend.settings import MEDIA_ROOT
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import IsAuthenticated
@@ -10,9 +10,7 @@ from rest_framework.response import Response
 from .exceptions import UniqueObjectsException
 from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
-from .serializers import (FavoriteSerializer, IngredientSerializer,
-                          RecipeSerializer, ShoppingCartSerailizer,
-                          TagSerializer)
+from .serializers import IngredientSerializer, RecipeSerializer, TagSerializer
 
 
 class IngredientViewSet(viewsets.ViewSet):
@@ -47,22 +45,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = (
+        'is_favorited', 'author', 'is_in_shopping_cart', 'tags',
+        )
 
     def perform_create(self, serializer):
-        root = MEDIA_ROOT + r'\images'
-        os.chdir(root)
-        with open(str(self.request.data['name']) + '.jpg', 'wb') as f:
-            f.write(base64.b64decode(self.request.data['image']))
         serializer.save(
             author=self.request.user,
-            image=(MEDIA_ROOT + r'\images' +
-                   chr(47) + self.request.data['name'] + '.jpg')
+            image=self.request.data.get('image')
             )
+
+    def perform_destroy(self, instance):
+        try:
+            os.remove(
+                MEDIA_ROOT + r'\images' + chr(47) + instance.name + '.jpg'
+                )
+        except FileNotFoundError:
+            pass
+        instance.delete()
 
 
 class FavoriteView(generics.UpdateAPIView):
     model = Favorite
-    serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id=None):
@@ -72,10 +77,14 @@ class FavoriteView(generics.UpdateAPIView):
         favorite = Favorite.objects.create(
             user=request.user, recipe=recipe
         )
-        serializer = FavoriteSerializer(favorite)
-        if serializer.is_valid():
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors)
+        response = {
+            'id': favorite.id,
+            'name': favorite.recipe.name,
+            'image': (favorite.recipe.image.url
+                      if favorite.recipe.image else None),
+            'cooking_time': favorite.recipe.cooking_time
+        }
+        return Response(response, status=status.HTTP_201_CREATED)
 
     def delete(self, request, id=None):
         favorite = get_object_or_404(
@@ -98,8 +107,14 @@ class ShoppingCartView(viewsets.ViewSet):
             author=request.user,
             recipe=recipe
         )
-        serializer = ShoppingCartSerailizer(shopping_cart)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        response = {
+            'id': shopping_cart.id,
+            'name': shopping_cart.recipe.name,
+            'image': (shopping_cart.recipe.image.url
+                      if shopping_cart.recipe.image else None),
+            'cooking_time': shopping_cart.recipe.cooking_time
+        }
+        return Response(response, status=status.HTTP_201_CREATED)
 
     def delete(self, request, id=None):
         shopping_cart = get_object_or_404(

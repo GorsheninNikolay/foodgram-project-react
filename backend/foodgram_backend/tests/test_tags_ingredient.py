@@ -1,13 +1,11 @@
-from django.db import IntegrityError, transaction
-from recipe.models import Ingredient, Tag
-# from recipe.exceptions import SubscribeOnYourSelf, UniqueObjectDoesntWork
+from recipes.models import Ingredient, Tag
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
 from users.models import User
 
 
-class RecipeTestCase(APITestCase):
+class TagIngredientsTestCase(APITestCase):
 
     data = {
             'email': 'vpupkin@yandex.ru',
@@ -58,13 +56,6 @@ class RecipeTestCase(APITestCase):
         self.assertEqual(response.data['name'], 'test_ingredient')
         self.assertEqual(response.data['id'], 1)
 
-    def test_try_create_ingredient(self):
-        response = self.client.post('/api/ingredients/')
-        self.assertEqual(
-            response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
-            )
-        self.assertEqual(Ingredient.objects.all().count(), 1)
-
     def test_get_tags(self):
         response = self.unathorized_client.get('/api/tags/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -76,10 +67,3 @@ class RecipeTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Tag.objects.all().count(), 1)
         self.assertEqual(response.data['name'], 'test_tag')
-
-    def test_create_tag(self):
-        response = self.client.post('/api/tags/')
-        self.assertEqual(
-            response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED
-            )
-        self.assertEqual(Tag.objects.all().count(), 1)
