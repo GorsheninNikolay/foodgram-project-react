@@ -3,6 +3,7 @@ import os
 
 from django.shortcuts import get_object_or_404
 from foodgram_backend.settings import MEDIA_ROOT
+from PIL import Image
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from users.models import User
@@ -16,10 +17,7 @@ def save_image(name, base64_image_text):
     root = MEDIA_ROOT + r'\images'
     os.chdir(root)
     with open(name + '.jpg', 'wb') as f:
-        try:
-            f.write(base64.b64decode(base64_image_text))
-        except TypeError:
-            return None
+        f.write(base64.b64decode(base64_image_text))
 
 
 class TagSerializer(ModelSerializer):
@@ -62,6 +60,19 @@ class RecipeSerializer(ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
+    def validate(self, data):
+        def validate_fields(self, field, data):
+            if self.context['request'].data.get(field) is None:
+                raise serializers.ValidationError(
+                    {field: 'Обязательное поле.'}
+                    )
+        validate_fields(self, 'tags', data)
+        validate_fields(self, 'ingredients', data)
+        validate_fields(self, 'image', data)
+        validate_fields(self, 'text', data)
+        validate_fields(self, 'cooking_time', data)
+        return data
+
     def get_is_favorited(self, obj) -> bool:
         request = self.context['request']
         if request.user is None or not request.user.is_authenticated:
@@ -94,7 +105,7 @@ class RecipeSerializer(ModelSerializer):
             self.context['request'].data['name'] + '.jpg')
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(Tag.objects.filter(
-            id__in=self.context['request'].data['tags'])
+            id__in=self.context['request'].data.get('tags'))
             )
         for ingredient in self.context['request'].data['ingredients']:
             RecipeIngredient.objects.create(
@@ -106,14 +117,10 @@ class RecipeSerializer(ModelSerializer):
 
     def update(self, instance, validated_data):
         validated_data.pop('ingredients_set')
-        try:
-            os.remove(MEDIA_ROOT + r'\images' + chr(47) + instance.name + '.jpg')
-        except FileNotFoundError:
-            pass
-        else:
-            save_image(
-                validated_data['name'], self.context['request'].data['image']
-            )
+        os.remove(instance.image.path)
+        save_image(
+            validated_data['name'], self.context['request'].data['image']
+        )
         instance.name = validated_data['name']
         instance.text = validated_data['text']
         instance.cooking_time = validated_data['cooking_time']
@@ -129,5 +136,7 @@ class RecipeSerializer(ModelSerializer):
                 recipe=instance,
                 amount=ingredient['amount']
                 )
+        instance.image = (MEDIA_ROOT + r'\images' +
+                          chr(47) + validated_data['name'] + '.jpg')
         instance.save()
         return instance

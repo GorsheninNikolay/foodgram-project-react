@@ -1,8 +1,10 @@
+import base64
 import os
 
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from foodgram_backend.settings import MEDIA_ROOT
+from PIL import Image
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -57,12 +59,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
 
     def perform_destroy(self, instance):
-        try:
-            os.remove(
-                MEDIA_ROOT + r'\images' + chr(47) + instance.name + '.jpg'
-                )
-        except FileNotFoundError:
-            pass
+        os.remove(instance.image.path)
         instance.delete()
 
 

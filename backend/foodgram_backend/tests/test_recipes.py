@@ -1,9 +1,16 @@
+import logging
+import os
+import tempfile
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from foodgram_backend.settings import MEDIA_ROOT
+from PIL import Image
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
-from users.models import User
+from users.models import Follow, User
 
 
 class RecipeTestCase(APITestCase):
@@ -11,13 +18,14 @@ class RecipeTestCase(APITestCase):
     data = {
         'ingredients': [
             {
-            'id': 1,
-            'amount': 555
+                'id': 1,
+                'amount': 555
             }
-        ],
+            ],
         'tags': [
             1
         ],
+        'image': r'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==', # noqa
         'name': 'test',
         'text': 'test',
         'cooking_time': 5
@@ -32,6 +40,7 @@ class RecipeTestCase(APITestCase):
             1,
             2
         ],
+        'image': r'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==', # noqa
         'name': 'another',
         'text': 'another',
         'cooking_time': 999
@@ -73,7 +82,7 @@ class RecipeTestCase(APITestCase):
         self.first_recipe = Recipe.objects.create(
             author=self.user_tester,
             name='first_recipe',
-            image=None,
+            image=tempfile.NamedTemporaryFile(suffix='.jpg').name,
             text='first_recipe',
             cooking_time=10
         )
@@ -91,6 +100,12 @@ class RecipeTestCase(APITestCase):
         self.another_client = APIClient()
         self.unathorized_client = APIClient()
         self.api_authentication()
+
+    def tearDown(self):
+        try:
+            os.remove(MEDIA_ROOT + r'\images' + chr(47) + 'another.jpg')
+        except FileNotFoundError:
+            pass
 
     def api_authentication(self):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
@@ -113,17 +128,20 @@ class RecipeTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_put_recipe(self):
+        self.client.post(r'/api/recipes/', self.data, format='json')
+        self.assertEqual(Recipe.objects.all().count(), 2)
         response = self.client.put(
-            r'/api/recipes/1/', self.another_data, format='json'
+            r'/api/recipes/2/', self.another_data, format='json'
             )
-        recipe = Recipe.objects.get(id=1)
+        recipe = Recipe.objects.get(id=2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Recipe.objects.all().count(), 1)
+        self.assertEqual(Recipe.objects.all().count(), 2)
         self.assertEqual(recipe.name, self.another_data['name'])
         self.assertEqual(
             recipe.cooking_time, self.another_data['cooking_time']
             )
         self.assertEqual(recipe.text, self.another_data['text'])
+        self.assertTrue(recipe.name in recipe.image.path)
         self.assertEqual(recipe.ingredients.count(), 2)
 
     def test_put_recipe_by_unauth_user(self):
@@ -151,9 +169,11 @@ class RecipeTestCase(APITestCase):
         self.assertNotEqual(recipe.text, self.another_data['text'])
 
     def test_delete_recipe(self):
-        response = self.client.delete(r'/api/recipes/1/')
+        self.client.post(r'/api/recipes/', self.data, format='json')
+        self.assertEqual(Recipe.objects.all().count(), 2)
+        response = self.client.delete(r'/api/recipes/2/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Recipe.objects.all().count(), 0)
+        self.assertEqual(Recipe.objects.all().count(), 1)
 
     def test_delete_recipe_by_another_user(self):
         response = self.another_client.delete(r'/api/recipes/1/')

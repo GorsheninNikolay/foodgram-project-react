@@ -98,13 +98,17 @@ class UserTestCase(APITestCase):
             'email': self.data['email'],
             'password': self.data['password']
         }
-        response = self.client.post(r'/api/auth/token/login/', email_password, format='json')
+        response = self.client.post(
+            r'/api/auth/token/login/', email_password, format='json'
+            )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.all().count(), 3)
         self.assertEqual(Token.objects.all().count(), 3)
 
     def test_delete_token_by_owner(self):
-        response = self.client.post(r'/api/auth/token/logout/', self.data, format='json')
+        response = self.client.post(
+            r'/api/auth/token/logout/', self.data, format='json'
+            )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Token.objects.all().count(), 1)
 
@@ -136,6 +140,7 @@ class UserTestCase(APITestCase):
                 self.client.get(r'/api/users/1/subscribe/')
         except IntegrityError:
             self.assertEqual(Follow.objects.all().count(), 0)
+            pass
         else:
             raise SubscribeOnYourSelf
 

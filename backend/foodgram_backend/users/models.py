@@ -3,15 +3,21 @@ from django.db import models
 
 
 class User(AbstractUser):
-    email = models.EmailField(max_length=254, unique=True)
-    username = models.CharField(max_length=150, unique=True)
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
-    password = models.CharField(max_length=150)
-    is_subscribed = models.BooleanField(default=False)
+    email = models.EmailField(
+        max_length=254, unique=True, verbose_name='Email'
+        )
+    username = models.CharField(
+        max_length=150, unique=True, verbose_name='Логин'
+        )
+    first_name = models.CharField(max_length=150, verbose_name='Имя')
+    last_name = models.CharField(max_length=150, verbose_name='Фамилия')
+    password = models.CharField(max_length=150, verbose_name='Пароль')
+    is_subscribed = models.BooleanField(default=False, verbose_name='Подписан')
 
     class Meta:
         ordering = ['-id']
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
     def __str__(self):
         return self.username
@@ -19,14 +25,18 @@ class User(AbstractUser):
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='followers'
+        User, on_delete=models.CASCADE,
+        related_name='followers', verbose_name='Пользователь'
     )
     following = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='followings'
+        User, on_delete=models.CASCADE,
+        related_name='followings', verbose_name='Подписка на пользователя'
     )
 
     class Meta:
         ordering = ['-id']
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         constraints = [
             models.CheckConstraint(
                 check=~models.Q(user=models.F('following')),
