@@ -25,7 +25,7 @@ class TagIngredientsTestCase(APITestCase):
         )
         self.ingredient = Ingredient.objects.create(
             name='test_ingredient',
-            measurment_unit='test_measurment'
+            measurement_unit='test_measurment'
         )
         self.tag = Tag.objects.create(
             name='test_tag',

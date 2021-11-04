@@ -63,11 +63,11 @@ class RecipeTestCase(APITestCase):
         )
         self.ingredient = Ingredient.objects.create(
             name='test_ingredient',
-            measurment_unit='test_measurment'
+            measurement_unit='test_measurment'
         )
         self.ingredient2 = Ingredient.objects.create(
             name='test_ingredient2',
-            measurment_unit='test_ingredient2'
+            measurement_unit='test_ingredient2'
         )
         self.tag = Tag.objects.create(
             name='test_tag',

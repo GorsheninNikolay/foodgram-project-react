@@ -94,6 +94,9 @@ class FavoriteView(generics.UpdateAPIView):
 class ShoppingCartView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
+    def download(self, request):
+        pass
+
     def retrieve(self, request, id=None):
         recipe = get_object_or_404(Recipe, id=id)
         if ShoppingCart.objects.filter(

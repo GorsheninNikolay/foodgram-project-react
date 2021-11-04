@@ -29,13 +29,13 @@ class TagSerializer(ModelSerializer):
 class IngredientSerializer(ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ('id', 'name', 'measurment_unit', )
+        fields = ('id', 'name', 'measurement_unit', )
 
 
 class RecipeIngredientSerializer(ModelSerializer):
     id = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
-    measurment_unit = serializers.SerializerMethodField()
+    measurement_unit = serializers.SerializerMethodField()
 
     def get_id(self, obj) -> int:
         return obj.ingredient.id
@@ -43,12 +43,12 @@ class RecipeIngredientSerializer(ModelSerializer):
     def get_name(self, obj) -> str:
         return obj.ingredient.name
 
-    def get_measurment_unit(self, obj) -> str:
-        return obj.ingredient.measurment_unit
+    def get_measurement_unit(self, obj) -> str:
+        return obj.ingredient.measurement_unit
 
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'name', 'measurment_unit', 'amount', )
+        fields = ('id', 'name', 'measurement_unit', 'amount', )
 
 
 class RecipeSerializer(ModelSerializer):

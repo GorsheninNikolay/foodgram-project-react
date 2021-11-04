@@ -17,7 +17,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'measurment_unit', )
+    list_display = ('id', 'name', 'measurement_unit', )
 
 
 @admin.register(Tag)
