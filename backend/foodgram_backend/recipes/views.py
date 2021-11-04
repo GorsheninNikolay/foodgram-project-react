@@ -1,11 +1,14 @@
 import base64
 import os
 
+from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from foodgram_backend.settings import MEDIA_ROOT
 from PIL import Image
 from rest_framework import generics, status, viewsets
+from rest_framework.parsers import (FileUploadParser, JSONParser,
+                                    MultiPartParser)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -13,6 +16,18 @@ from .exceptions import UniqueObjectsException
 from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import IngredientSerializer, RecipeSerializer, TagSerializer
+
+
+def get_image(data):
+    """ Преобразование кода base64 в картинку ContentFile """
+    if (isinstance(data['image'], str)
+            and data['image'].startswith('data:image')):
+        format, imgstr = data['image'].split(';base64,')
+        ext = format.split('/')[-1]
+        image = ContentFile(
+            base64.b64decode(imgstr), name=data['name'] + '.' + ext
+            )
+        return image
 
 
 class IngredientViewSet(viewsets.ViewSet):
@@ -48,15 +63,43 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend]
+    parser_classes = (MultiPartParser, JSONParser, )
     filterset_fields = (
         'is_favorited', 'author', 'is_in_shopping_cart', 'tags',
         )
 
-    def perform_create(self, serializer):
-        serializer.save(
-            author=self.request.user,
-            image=self.request.data.get('image')
+    def create(self, request):
+        image = get_image(request.data)
+        request.data['image'] = image
+        serializer = RecipeSerializer(
+            data=request.data, context={'request': request}
             )
+        if serializer.is_valid():
+            serializer.save(
+                author=request.user,
+                ingredients=request.data['ingredients'],
+                tags=request.data['tags']
+                )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None):
+        recipe = Recipe.objects.get(id=pk)
+        image = get_image(request.data)
+        recipe.image.delete()
+        request.data['image'] = image
+        print(request.data)
+        serializer = RecipeSerializer(
+            recipe, data=request.data, context={'request': request}
+            )
+        if serializer.is_valid():
+            serializer.save(
+                author=request.user,
+                ingredients=request.data['ingredients'],
+                tags=request.data['tags']
+                )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_destroy(self, instance):
         os.remove(instance.image.path)

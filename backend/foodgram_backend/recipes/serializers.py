@@ -1,8 +1,9 @@
 import base64
 import os
 
+from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
-from foodgram_backend.settings import MEDIA_ROOT
+from foodgram_backend.settings import MEDIA_ROOT, MEDIA_URL
 from PIL import Image
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
@@ -13,11 +14,21 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 
 
-def save_image(name, base64_image_text):
-    root = MEDIA_ROOT + r'\images'
-    os.chdir(root)
-    with open(name + '.jpg', 'wb') as f:
-        f.write(base64.b64decode(base64_image_text))
+class Base64ImageField(serializers.ImageField):
+    def from_native(self, data):
+        raise TypeError
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+
+        return super(Base64ImageField, self).from_native(data)
+
+
+class ImageSerialzier(ModelSerializer):
+    class Meta:
+        model = Image
+        fields = ('recipe', 'image')
 
 
 class TagSerializer(ModelSerializer):
@@ -56,22 +67,24 @@ class RecipeSerializer(ModelSerializer):
     ingredients = RecipeIngredientSerializer(
         source='ingredients_set', many=True
         )
+    # image = Base64ImageField(allow_empty_file=True)
+    image = serializers.ImageField(use_url=MEDIA_URL)
     author = UserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
-    def validate(self, data):
-        def validate_fields(self, field, data):
-            if self.context['request'].data.get(field) is None:
-                raise serializers.ValidationError(
-                    {field: 'Обязательное поле.'}
-                    )
-        validate_fields(self, 'tags', data)
-        validate_fields(self, 'ingredients', data)
-        validate_fields(self, 'image', data)
-        validate_fields(self, 'text', data)
-        validate_fields(self, 'cooking_time', data)
-        return data
+    # def validate(self, data):
+    #     def validate_fields(self, field, data):
+    #         if self.context['request'].data.get(field) is None:
+    #             raise serializers.ValidationError(
+    #                 {field: 'Обязательное поле.'}
+    #                 )
+    #     validate_fields(self, 'tags', data)
+    #     validate_fields(self, 'ingredients', data)
+    #     validate_fields(self, 'image', data)
+    #     validate_fields(self, 'text', data)
+    #     validate_fields(self, 'cooking_time', data)
+    #     return data
 
     def get_is_favorited(self, obj) -> bool:
         request = self.context['request']
@@ -93,21 +106,17 @@ class RecipeSerializer(ModelSerializer):
         fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited',
                   'is_in_shopping_cart', 'name',
                   'image', 'text', 'cooking_time')
-        read_only_fields = ('author', 'image', 'tags', )
+        read_only_fields = ('author', 'tags', )
 
     def create(self, validated_data):
         validated_data.pop('ingredients_set')
-        save_image(
-            self.context['request'].data['name'], validated_data['image']
-            )
-        validated_data['image'] = (
-            MEDIA_ROOT + r'\images' + chr(47) +
-            self.context['request'].data['name'] + '.jpg')
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(Tag.objects.filter(
-            id__in=self.context['request'].data.get('tags'))
+            id__in=tags)
             )
-        for ingredient in self.context['request'].data['ingredients']:
+        for ingredient in ingredients:
             RecipeIngredient.objects.create(
                 ingredient=Ingredient.objects.get(id=ingredient['id']),
                 recipe=recipe,
@@ -117,26 +126,23 @@ class RecipeSerializer(ModelSerializer):
 
     def update(self, instance, validated_data):
         validated_data.pop('ingredients_set')
-        os.remove(instance.image.path)
-        save_image(
-            validated_data['name'], self.context['request'].data['image']
-        )
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
         instance.name = validated_data['name']
         instance.text = validated_data['text']
         instance.cooking_time = validated_data['cooking_time']
+        instance.image = validated_data['image']
         instance.tags.set(
             Tag.objects.filter(
-                id__in=self.context['request'].data['tags']
+                id__in=tags
                 )
             )
         RecipeIngredient.objects.filter(recipe=instance).delete()
-        for ingredient in self.context['request'].data['ingredients']:
+        for ingredient in ingredients:
             RecipeIngredient.objects.create(
                 ingredient=Ingredient.objects.get(id=ingredient['id']),
                 recipe=instance,
                 amount=ingredient['amount']
                 )
-        instance.image = (MEDIA_ROOT + r'\images' +
-                          chr(47) + validated_data['name'] + '.jpg')
         instance.save()
         return instance
