@@ -4,8 +4,6 @@ django-colorfield==0.4.5
 django-environ==0.8.1
 django-filter==21.1
 djangorestframework==3.12.4
-djangorestframework-jwt==1.11.0
-djangorestframework-simplejwt==5.0.0
 djangorestframework-yaml==2.0.0
 drf-base64==2.0
 fpdf==1.7.2
