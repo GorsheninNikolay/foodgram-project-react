@@ -61,7 +61,7 @@ class TagViewSet(viewsets.ViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly | IsAdminUser]
+    permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     parser_classes = (MultiPartParser, JSONParser, )
     filterset_fields = (
@@ -69,8 +69,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     def create(self, request):
-        obj = get_object_or_404(self.get_queryset())
-        self.check_object_permissions(request.user, obj)
         image = get_image(request.data)
         request.data['image'] = image
         serializer = RecipeSerializer(
@@ -103,6 +101,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_destroy(self, instance):
+        self.check_object_permissions(self.request, instance)
         os.remove(instance.image.path)
         instance.delete()
 

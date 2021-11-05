@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
 from rest_framework.exceptions import NotAuthenticated
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Follow, User
@@ -21,7 +21,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class FollowView(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated | IsAdminUser]
     serializer_class = UserSerializer
     queryset = Follow.objects.all()
 

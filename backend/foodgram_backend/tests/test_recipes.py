@@ -161,8 +161,10 @@ class RecipeTestCase(APITestCase):
         self.assertNotEqual(recipe.text, self.another_data['text'])
 
     def test_put_recipe_by_another_user(self):
+        self.client.post(r'/api/recipes/', self.data, format='json')
+        self.assertEqual(Recipe.objects.all().count(), 2)
         response = self.another_client.put(
-            r'/api/recipes/1/', self.another_data, format='json'
+            r'/api/recipes/2/', self.another_data, format='json'
             )
         recipe = Recipe.objects.get(id=1)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -180,9 +182,11 @@ class RecipeTestCase(APITestCase):
         self.assertEqual(Recipe.objects.all().count(), 1)
 
     def test_delete_recipe_by_another_user(self):
-        response = self.another_client.delete(r'/api/recipes/1/')
+        self.client.post(r'/api/recipes/', self.data, format='json')
+        self.assertEqual(Recipe.objects.all().count(), 2)
+        response = self.another_client.delete(r'/api/recipes/2/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(Recipe.objects.all().count(), 1)
+        self.assertEqual(Recipe.objects.all().count(), 2)
 
     def test_delete_non_exist_recipe(self):
         response = self.client.delete(r'/api/recipes/999/')
