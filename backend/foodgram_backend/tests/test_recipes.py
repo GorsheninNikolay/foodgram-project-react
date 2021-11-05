@@ -1,10 +1,6 @@
-import logging
 import os
 import tempfile
 
-from django.core.files.uploadedfile import SimpleUploadedFile
-from foodgram_backend.settings import MEDIA_ROOT
-from PIL import Image
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from rest_framework import status

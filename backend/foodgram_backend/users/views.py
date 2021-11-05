@@ -27,8 +27,7 @@ class FollowView(viewsets.ModelViewSet):
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs).filter(
-                user=self.request.user
-            )
+            user=self.request.user)
         followings = [user.following for user in queryset]
         queryset = User.objects.filter(username__in=followings)
         return queryset
@@ -43,8 +42,7 @@ class FollowView(viewsets.ModelViewSet):
 
     def destroy(self, request, id=None):
         follow = get_object_or_404(
-            Follow, user=request.user, following=User.objects.get(id=id)
-            )
+            Follow, user=request.user, following=User.objects.get(id=id))
         follow.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
