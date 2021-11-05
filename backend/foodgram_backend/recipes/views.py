@@ -28,6 +28,7 @@ def get_image(data):
             base64.b64decode(imgstr), name=data['name'] + '.' + ext
             )
         return image
+    return None
 
 
 class IngredientViewSet(viewsets.ViewSet):
