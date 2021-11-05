@@ -234,3 +234,8 @@ class RecipeTestCase(APITestCase):
         response = self.client.delete(r'/api/recipes/1/shopping_cart/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(ShoppingCart.objects.all().count(), 0)
+
+    def test_download_shopping_cart(self):
+        self.client.get(r'/api/recipes/1/shopping_cart/')
+        response = self.client.get(r'/api/recipes/download_shopping_cart/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

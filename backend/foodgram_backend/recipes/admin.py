@@ -12,12 +12,17 @@ class RecipeIngredientInline(admin.StackedInline):
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeIngredientInline, )
-    list_display = ('id', 'author', 'name', 'cooking_time', )
+    fieldsets = [
+        (None, {'fields': ['author', 'name', 'image', 'text', 'tags', 'cooking_time']}), # noqa
+    ]
+    list_display = ('id', 'name', 'author', )
+    list_filter = ('author', 'name', 'tags', )
 
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'measurement_unit', )
+    list_filter = ('name', )
 
 
 @admin.register(Tag)

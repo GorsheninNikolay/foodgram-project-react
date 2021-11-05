@@ -2,18 +2,18 @@ import base64
 import os
 
 from django.core.files.base import ContentFile
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from foodgram_backend.settings import MEDIA_ROOT
-from PIL import Image
 from rest_framework import generics, status, viewsets
-from rest_framework.parsers import (FileUploadParser, JSONParser,
-                                    MultiPartParser)
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import JSONParser, MultiPartParser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .exceptions import UniqueObjectsException
-from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                     ShoppingCart, Tag)
+from .pdf_file import create_shopping_cart
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import IngredientSerializer, RecipeSerializer, TagSerializer
 
@@ -61,7 +61,7 @@ class TagViewSet(viewsets.ViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly | IsAdminUser]
     filter_backends = [DjangoFilterBackend]
     parser_classes = (MultiPartParser, JSONParser, )
     filterset_fields = (
@@ -69,6 +69,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     def create(self, request):
+        obj = get_object_or_404(self.get_queryset())
+        self.check_object_permissions(request.user, obj)
         image = get_image(request.data)
         request.data['image'] = image
         serializer = RecipeSerializer(
@@ -85,11 +87,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def update(self, request, pk=None):
         recipe = Recipe.objects.get(id=pk)
-        if recipe.author != request.user:
-            return Response(
-                {'detail': 'Недостаточно прав'},
-                status=status.HTTP_403_FORBIDDEN
-                )
+        self.check_object_permissions(request, recipe)
         image = get_image(request.data)
         recipe.image.delete()
         request.data['image'] = image
@@ -98,7 +96,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
         if serializer.is_valid():
             serializer.save(
-                author=request.user,
                 ingredients=request.data['ingredients'],
                 tags=request.data['tags']
                 )
@@ -112,7 +109,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 class FavoriteView(generics.UpdateAPIView):
     model = Favorite
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser | IsAuthenticated]
 
     def get(self, request, id=None):
         recipe = Recipe.objects.get(id=id)
@@ -142,7 +139,23 @@ class ShoppingCartView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def download(self, request):
-        pass
+        data = {}
+        shopping_cart = ShoppingCart.objects.filter(author=request.user)
+        for shopping in shopping_cart:
+            recipe = Recipe.objects.get(id=shopping.recipe.id)
+            ingredients = RecipeIngredient.objects.filter(recipe=recipe)
+            for recipe_ingredient in ingredients:
+                ingredient = recipe_ingredient.ingredient
+                if not data.get(ingredient.name):
+                    data[ingredient.name] = {
+                        'name': ingredient.name,
+                        'measurement_unit': ingredient.measurement_unit,
+                        'amount': 0
+                    }
+                data[ingredient.name]['amount'] += recipe_ingredient.amount
+        create_shopping_cart(data)
+        response = FileResponse(open('media/shopping_cart.pdf', 'rb'))
+        return response
 
     def retrieve(self, request, id=None):
         recipe = get_object_or_404(Recipe, id=id)

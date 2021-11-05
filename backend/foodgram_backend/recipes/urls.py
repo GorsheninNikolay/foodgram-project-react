@@ -24,6 +24,9 @@ urlpatterns = [
     path(r'recipes/<int:id>/shopping_cart/', ShoppingCartView.as_view(
         {'get': 'retrieve', 'delete': 'delete'}
     )),
+    path(r'recipes/download_shopping_cart/', ShoppingCartView.as_view(
+        {'get': 'download'}
+    )),
 ]
 
 urlpatterns += router.urls
