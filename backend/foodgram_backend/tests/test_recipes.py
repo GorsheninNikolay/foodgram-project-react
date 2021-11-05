@@ -25,7 +25,7 @@ class RecipeTestCase(APITestCase):
         'tags': [
             1
         ],
-        'image': r'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==', # noqa
+        'image': r'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==', # noqa
         'name': 'test',
         'text': 'test',
         'cooking_time': 5
@@ -40,7 +40,7 @@ class RecipeTestCase(APITestCase):
             1,
             2
         ],
-        'image': r'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==', # noqa
+        'image': r'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAgMAAABieywaAAAACVBMVEUAAAD///9fX1/S0ecCAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAACklEQVQImWNoAAAAggCByxOyYQAAAABJRU5ErkJggg==', # noqa
         'name': 'another',
         'text': 'another',
         'cooking_time': 999
@@ -103,7 +103,11 @@ class RecipeTestCase(APITestCase):
 
     def tearDown(self):
         try:
-            os.remove(MEDIA_ROOT + r'\images' + chr(47) + 'another.jpg')
+            os.remove('media/images/another.png')
+        except FileNotFoundError:
+            pass
+        try:
+            os.remove('media/images/test.png')
         except FileNotFoundError:
             pass
 

@@ -85,10 +85,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def update(self, request, pk=None):
         recipe = Recipe.objects.get(id=pk)
+        if recipe.author != request.user:
+            return Response(
+                {'detail': 'Недостаточно прав'},
+                status=status.HTTP_403_FORBIDDEN
+                )
         image = get_image(request.data)
         recipe.image.delete()
         request.data['image'] = image
-        print(request.data)
         serializer = RecipeSerializer(
             recipe, data=request.data, context={'request': request}
             )

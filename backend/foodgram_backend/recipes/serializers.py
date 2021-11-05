@@ -1,10 +1,5 @@
-import base64
-import os
-
-from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
-from foodgram_backend.settings import MEDIA_ROOT, MEDIA_URL
-from PIL import Image
+from foodgram_backend.settings import MEDIA_URL
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from users.models import User
@@ -12,23 +7,6 @@ from users.serializers import UserSerializer
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
-
-
-class Base64ImageField(serializers.ImageField):
-    def from_native(self, data):
-        raise TypeError
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-
-        return super(Base64ImageField, self).from_native(data)
-
-
-class ImageSerialzier(ModelSerializer):
-    class Meta:
-        model = Image
-        fields = ('recipe', 'image')
 
 
 class TagSerializer(ModelSerializer):
@@ -67,24 +45,21 @@ class RecipeSerializer(ModelSerializer):
     ingredients = RecipeIngredientSerializer(
         source='ingredients_set', many=True
         )
-    # image = Base64ImageField(allow_empty_file=True)
     image = serializers.ImageField(use_url=MEDIA_URL)
     author = UserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
-    # def validate(self, data):
-    #     def validate_fields(self, field, data):
-    #         if self.context['request'].data.get(field) is None:
-    #             raise serializers.ValidationError(
-    #                 {field: 'Обязательное поле.'}
-    #                 )
-    #     validate_fields(self, 'tags', data)
-    #     validate_fields(self, 'ingredients', data)
-    #     validate_fields(self, 'image', data)
-    #     validate_fields(self, 'text', data)
-    #     validate_fields(self, 'cooking_time', data)
-    #     return data
+    def validate(self, data):
+        def validate_fields(self, field, data):
+            if self.context['request'].data.get(field) is None:
+                raise serializers.ValidationError(
+                    {field: 'Обязательное поле.'}
+                    )
+        validate_fields(self, 'tags', data)
+        validate_fields(self, 'image', data)
+        validate_fields(self, 'name', data)
+        return data
 
     def get_is_favorited(self, obj) -> bool:
         request = self.context['request']
