@@ -1,11 +1,13 @@
 import os
 import tempfile
 
-from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
-                            ShoppingCart, Tag)
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
+
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import User
 
 
@@ -133,7 +135,7 @@ class RecipeTestCase(APITestCase):
         response = self.client.put(
             r'/api/recipes/2/', self.another_data, format='json'
             )
-        recipe = Recipe.objects.get(id=2)
+        recipe = get_object_or_404(Recipe, id=2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Recipe.objects.all().count(), 2)
         self.assertEqual(recipe.name, self.another_data['name'])
@@ -142,13 +144,13 @@ class RecipeTestCase(APITestCase):
             )
         self.assertEqual(recipe.text, self.another_data['text'])
         self.assertTrue(recipe.name in recipe.image.path)
-        self.assertEqual(recipe.ingredients.count(), 2)
+        self.assertEqual(RecipeIngredient.objects.filter(recipe=recipe).count(), 2)  # noqa
 
     def test_put_recipe_by_unauth_user(self):
         response = self.unathorized_client.put(
             r'/api/recipes/1/', self.another_data, format='json'
             )
-        recipe = Recipe.objects.get(id=1)
+        recipe = get_object_or_404(Recipe, id=1)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertNotEqual(recipe.name, self.another_data['name'])
         self.assertNotEqual(
@@ -162,7 +164,7 @@ class RecipeTestCase(APITestCase):
         response = self.another_client.put(
             r'/api/recipes/2/', self.another_data, format='json'
             )
-        recipe = Recipe.objects.get(id=1)
+        recipe = get_object_or_404(Recipe, id=1)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertNotEqual(recipe.name, self.another_data['name'])
         self.assertNotEqual(
@@ -238,4 +240,7 @@ class RecipeTestCase(APITestCase):
     def test_download_shopping_cart(self):
         self.client.get(r'/api/recipes/1/shopping_cart/')
         response = self.client.get(r'/api/recipes/download_shopping_cart/')
+        self.assertTrue(
+            b'test_ingredient (test_measurment) -- 10' in response.content
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)

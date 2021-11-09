@@ -1,7 +1,8 @@
-from recipes.models import Ingredient, Tag
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
+
+from recipes.models import Ingredient, Tag
 from users.models import User
 
 
@@ -45,25 +46,27 @@ class TagIngredientsTestCase(APITestCase):
     def test_get_ingredients(self):
         response = self.unathorized_client.get('/api/ingredients/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Ingredient.objects.all().count(), 1)
-        self.assertEqual(response.data[0]['name'], 'test_ingredient')
-        self.assertEqual(response.data[0]['id'], 1)
+        self.assertTrue(len(response.json()['results']) != 0)
+        self.assertEqual(response.json()['results'][0]['id'], 1)
+        self.assertEqual(
+            response.json()['results'][0]['name'], 'test_ingredient'
+            )
 
     def test_get_one_ingredient(self):
         response = self.unathorized_client.get('/api/ingredients/1/')
         self.assertEqual(Ingredient.objects.all().count(), 1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'test_ingredient')
-        self.assertEqual(response.data['id'], 1)
+        self.assertEqual(response.json()['name'], 'test_ingredient')
+        self.assertEqual(response.json()['id'], 1)
 
     def test_get_tags(self):
         response = self.unathorized_client.get('/api/tags/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Tag.objects.all().count(), 1)
-        self.assertEqual(response.data[0]['name'], 'test_tag')
+        self.assertEqual(response.json()['results'][0]['name'], 'test_tag')
 
     def test_get_one_tag(self):
         response = self.unathorized_client.get('/api/tags/1/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Tag.objects.all().count(), 1)
-        self.assertEqual(response.data['name'], 'test_tag')
+        self.assertEqual(response.json()['name'], 'test_tag')

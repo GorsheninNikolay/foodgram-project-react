@@ -1,8 +1,9 @@
 from django.db import IntegrityError, transaction
-from recipes.exceptions import SubscribeOnYourSelf, UniqueObjectDoesntWork
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
+
+from recipes.exceptions import SubscribeOnYourSelf, UniqueObjectDoesntWork
 from users.models import Follow, User
 
 
@@ -67,14 +68,14 @@ class UserTestCase(APITestCase):
     def test_profile(self):
         response = self.client.get(r'/api/users/me/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['id'], 1)
-        self.assertEqual(response.data['username'], 'tester')
-        self.assertNotEqual(response.data['username'], 'vasya.pupkin')
+        self.assertEqual(response.json()['id'], 1)
+        self.assertEqual(response.json()['username'], 'tester')
+        self.assertNotEqual(response.json()['username'], 'vasya.pupkin')
 
     def test_profile_another_person(self):
         response = self.client.get(r'/api/users/2/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['id'], 2)
+        self.assertEqual(response.json()['id'], 2)
 
     def test_profile_unathorized_client(self):
         response = self.unathorized_client.get(r'/api/users/me/')
@@ -119,8 +120,8 @@ class UserTestCase(APITestCase):
         self.assertTrue(Follow.objects.filter(
             user__username='tester', following__username='another').exists()
             )
-        self.assertEqual(response.data['email'], 'another@yandex.ru')
-        self.assertTrue(response.data['is_subscribed'])
+        self.assertEqual(response.json()['email'], 'another@yandex.ru')
+        self.assertTrue(response.json()['is_subscribed'])
 
     def test_double_subscribe(self):
         response = self.client.get(r'/api/users/2/subscribe/')

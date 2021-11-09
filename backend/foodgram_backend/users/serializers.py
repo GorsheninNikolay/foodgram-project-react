@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
@@ -11,10 +12,9 @@ class UserSerializer(ModelSerializer):
         user = self.context.get('request').user
         if user is None or not user.is_authenticated:
             return False
-        user = User.objects.get(username=self.context['request'].user)
-        following = User.objects.get(username=obj.username)
-        follow = Follow.objects.filter(user=user, following=following).exists()
-        return follow
+        user = get_object_or_404(User, username=user)
+        following = get_object_or_404(User, username=obj.username)
+        return Follow.objects.filter(user=user, following=following).exists()
 
     class Meta:
         model = User
@@ -25,11 +25,24 @@ class UserSerializer(ModelSerializer):
         )
 
 
-class PasswordSerializer(ModelSerializer):
-    model = User
-    new_password = serializers.CharField(required=True)
-    current_password = serializers.CharField(required=True)
+class TokenSerializer(ModelSerializer):
+    email = serializers.CharField(read_only=True)
+    password = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
-        fields = ('new_password', 'current_password',)
+        fields = ('email', 'password', )
+
+
+class PasswordSerializer(ModelSerializer):
+    new_password = serializers.CharField(required=True)
+    current_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['current_password'] != self.context['request'].user.password:
+            raise serializers.ValidationError('Неверный пароль.')
+        return data
+
+    class Meta:
+        model = User
+        fields = ('new_password', 'current_password', )

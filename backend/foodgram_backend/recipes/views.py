@@ -1,11 +1,9 @@
-import base64
 import os
 
-from django.core.files.base import ContentFile
-from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status, viewsets
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
@@ -15,48 +13,19 @@ from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 from .pdf_file import create_shopping_cart
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
-from .serializers import IngredientSerializer, RecipeSerializer, TagSerializer
+from .serializers import (FavoriteShoppingSerializer, IngredientSerializer,
+                          RecipeSerializer, TagSerializer)
+from .utils import get_image
 
 
-def get_image(data):
-    """ Преобразование кода base64 в картинку ContentFile """
-    if (isinstance(data['image'], str)
-            and data['image'].startswith('data:image')):
-        format, imgstr = data['image'].split(';base64,')
-        ext = format.split('/')[-1]
-        image = ContentFile(
-            base64.b64decode(imgstr), name=data['name'] + '.' + ext
-            )
-        return image
-    return None
+class IngredientViewSet(viewsets.ModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
 
 
-class IngredientViewSet(viewsets.ViewSet):
-
-    def list(self, request):
-        queryset = Ingredient.objects.all()
-        serializer = IngredientSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, id=None):
-        queryset = Ingredient.objects.all()
-        ingredient = get_object_or_404(queryset, pk=id)
-        serializer = IngredientSerializer(ingredient)
-        return Response(serializer.data)
-
-
-class TagViewSet(viewsets.ViewSet):
-
-    def list(self, request):
-        queryset = Tag.objects.all()
-        serializer = TagSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, id=None):
-        queryset = Tag.objects.all()
-        tag = get_object_or_404(queryset, pk=id)
-        serializer = TagSerializer(tag)
-        return Response(serializer.data)
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -66,26 +35,28 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     parser_classes = (MultiPartParser, JSONParser, )
     filterset_fields = (
-        'is_favorited', 'author', 'is_in_shopping_cart', 'tags',
+        'author', 'tags',
         )
 
     def create(self, request):
+        """ Из-за serializers.ImageField не могу реализовать метод create в сериализаторе # noqa
+        Сериализатор требует именно картинку, также пробовал Base64Field, но безуспешно
+        """
         image = get_image(request.data)
         request.data['image'] = image
         serializer = RecipeSerializer(
             data=request.data, context={'request': request}
             )
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save(
                 author=request.user,
                 ingredients=request.data['ingredients'],
                 tags=request.data['tags']
                 )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
-        recipe = Recipe.objects.get(id=pk)
+        recipe = get_object_or_404(Recipe, id=pk)
         self.check_object_permissions(request, recipe)
         image = get_image(request.data)
         recipe.image.delete()
@@ -93,7 +64,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer = RecipeSerializer(
             recipe, data=request.data, context={'request': request}
             )
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save(
                 ingredients=request.data['ingredients'],
                 tags=request.data['tags']
@@ -102,83 +73,74 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_destroy(self, instance):
-        self.check_object_permissions(self.request, instance)
         os.remove(instance.image.path)
         instance.delete()
 
-
-class FavoriteView(generics.UpdateAPIView):
-    model = Favorite
-    permission_classes = [IsAdminUser | IsAuthenticated]
-
-    def get(self, request, id=None):
-        recipe = Recipe.objects.get(id=id)
-        if Favorite.objects.filter(user=request.user, recipe=recipe).exists():
-            raise UniqueObjectsException
-        favorite = Favorite.objects.create(
-            user=request.user, recipe=recipe
-        )
-        response = {
-            'id': favorite.id,
-            'name': favorite.recipe.name,
-            'image': (favorite.recipe.image.url
-                      if favorite.recipe.image else None),
-            'cooking_time': favorite.recipe.cooking_time
-        }
-        return Response(response, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, id=None):
-        favorite = get_object_or_404(
-            Favorite, user=request.user, recipe=Recipe.objects.get(id=id)
+    @action(detail=True,
+            methods=['GET', 'DELETE'],
+            permission_classes=[IsAuthenticated | IsAdminUser])
+    def favorite(self, request, pk=None):
+        if request.method == 'GET':
+            recipe = get_object_or_404(Recipe, id=pk)
+            if Favorite.objects.filter(
+                user=request.user, recipe=recipe
+                    ).exists():
+                raise UniqueObjectsException
+            favorite = Favorite.objects.create(
+                user=request.user, recipe=recipe
             )
-        favorite.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            serializer = FavoriteShoppingSerializer(favorite)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+        if request.method == 'DELETE':
+            favorite = get_object_or_404(
+                Favorite, user=request.user, recipe=Recipe.objects.get(id=pk)
+            )
+            favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-class ShoppingCartView(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
-
-    def download(self, request):
+    @action(detail=False,
+            methods=['GET'],
+            permission_classes=[IsAuthenticated])
+    def download_shopping_cart(self, request):
         data = {}
-        shopping_cart = ShoppingCart.objects.filter(author=request.user)
-        for shopping in shopping_cart:
-            recipe = Recipe.objects.get(id=shopping.recipe.id)
-            ingredients = RecipeIngredient.objects.filter(recipe=recipe)
-            for recipe_ingredient in ingredients:
-                ingredient = recipe_ingredient.ingredient
-                if not data.get(ingredient.name):
-                    data[ingredient.name] = {
-                        'name': ingredient.name,
-                        'measurement_unit': ingredient.measurement_unit,
-                        'amount': 0
-                    }
-                data[ingredient.name]['amount'] += recipe_ingredient.amount
-        create_shopping_cart(data)
-        response = FileResponse(open('media/shopping_cart.pdf', 'rb'))
-        return response
+        shopping_cart = ShoppingCart.objects.filter(
+            author=request.user).values_list('recipe', flat=True)
+        ingredients = RecipeIngredient.objects.filter(recipe__in=shopping_cart)
+        for recipe_ingredient in ingredients:
+            ingredient = recipe_ingredient.ingredient
+            if not data.get(ingredient.name):
+                data[ingredient.name] = {
+                    'name': ingredient.name,
+                    'measurement_unit': ingredient.measurement_unit,
+                    'amount': 0
+                }
+            data[ingredient.name]['amount'] += recipe_ingredient.amount
+        return create_shopping_cart(data)
 
-    def retrieve(self, request, id=None):
-        recipe = get_object_or_404(Recipe, id=id)
-        if ShoppingCart.objects.filter(
-            author=request.user, recipe=recipe
-                ).exists():
-            raise UniqueObjectsException
-        shopping_cart = ShoppingCart.objects.create(
-            author=request.user,
-            recipe=recipe
-        )
-        response = {
-            'id': shopping_cart.id,
-            'name': shopping_cart.recipe.name,
-            'image': (shopping_cart.recipe.image.url
-                      if shopping_cart.recipe.image else None),
-            'cooking_time': shopping_cart.recipe.cooking_time
-        }
-        return Response(response, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, id=None):
-        shopping_cart = get_object_or_404(
-            ShoppingCart, recipe=get_object_or_404(Recipe, id=id)
+    @action(detail=True,
+            methods=['GET', 'DELETE'],
+            permission_classes=[IsAuthenticated | IsAdminUser])
+    def shopping_cart(self, request, pk=None):
+        if request.method == 'GET':
+            recipe = get_object_or_404(Recipe, id=pk)
+            if ShoppingCart.objects.filter(
+                author=request.user, recipe=recipe
+                    ).exists():
+                raise UniqueObjectsException
+            shopping_cart = ShoppingCart.objects.create(
+                author=request.user,
+                recipe=recipe
             )
-        shopping_cart.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            serializer = FavoriteShoppingSerializer(shopping_cart)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if request.method == 'DELETE':
+            shopping_cart = get_object_or_404(
+                ShoppingCart, recipe=get_object_or_404(Recipe, id=pk)
+                )
+            shopping_cart.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(status=status.HTTP_404_NOT_FOUND)
