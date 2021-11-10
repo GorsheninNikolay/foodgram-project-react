@@ -54,6 +54,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 tags=request.data['tags']
                 )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None):
         recipe = get_object_or_404(Recipe, id=pk)
