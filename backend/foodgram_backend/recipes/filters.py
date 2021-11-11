@@ -1,8 +1,8 @@
 import django_filters
 from django.db.models import Q
-from users.models import User
 
 from recipes.models import Favorite, Recipe, ShoppingCart
+from users.models import User
 
 
 class RecipeFilter(django_filters.FilterSet):
