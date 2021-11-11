@@ -1,5 +1,4 @@
 from django.shortcuts import get_object_or_404
-from foodgram_backend.settings import MEDIA_URL
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from users.models import User
@@ -22,7 +21,7 @@ class IngredientSerializer(ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', )
 
 
-class FavoriteShoppingSerializer(ModelSerializer):
+class ShortRecipeSerializer(ModelSerializer):
     id = serializers.IntegerField(source='recipe.id')
     name = serializers.CharField(source='recipe.name')
     image = serializers.SerializerMethodField()
@@ -54,7 +53,7 @@ class RecipeSerializer(ModelSerializer):
     ingredients = RecipeIngredientSerializer(
         source='ingredient_set', many=True, read_only=True
         )
-    image = serializers.ImageField(use_url=MEDIA_URL)
+    image = serializers.ImageField()
     author = UserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -92,7 +91,7 @@ class RecipeSerializer(ModelSerializer):
         if request.user is None or not request.user.is_authenticated:
             return False
         return ShoppingCart.objects.filter(
-            author=request.user, recipe=obj
+            user=request.user, recipe=obj
             ).exists()
 
     class Meta:
@@ -101,11 +100,6 @@ class RecipeSerializer(ModelSerializer):
                   'is_in_shopping_cart', 'name',
                   'image', 'text', 'cooking_time')
         read_only_fields = ('author', 'tags', )
-        extra_kwargs = {
-            'image': {
-                'validators': []
-            }
-        }
 
     def create_or_update_tags_and_ingredients(self, recipe, tags, ingredients):
         recipe.tags.set(Tag.objects.filter(

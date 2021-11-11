@@ -9,34 +9,41 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .exceptions import UniqueObjectsException
+from .filters import RecipeFilter
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 from .pdf_file import create_shopping_cart
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
-from .serializers import (FavoriteShoppingSerializer, IngredientSerializer,
-                          RecipeSerializer, TagSerializer)
+from .serializers import (IngredientSerializer, RecipeSerializer,
+                          ShortRecipeSerializer, TagSerializer)
 from .utils import get_image
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
-    queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        queryset = Ingredient.objects.all()
+        name = self.request.query_params.get('search')
+        if name is not None:
+            return queryset.filter(name__icontains=name.lower())
+        return queryset
 
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
-    filter_backends = [DjangoFilterBackend]
     parser_classes = (MultiPartParser, JSONParser, )
-    filterset_fields = (
-        'author', 'tags',
-        )
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = RecipeFilter
 
     def create(self, request):
         """ Из-за serializers.ImageField не могу реализовать метод create в сериализаторе # noqa
@@ -90,7 +97,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             favorite = Favorite.objects.create(
                 user=request.user, recipe=recipe
             )
-            serializer = FavoriteShoppingSerializer(favorite)
+            serializer = ShortRecipeSerializer(favorite)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
@@ -99,7 +106,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             favorite.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False,
             methods=['GET'],
@@ -107,7 +114,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request):
         data = {}
         shopping_cart = ShoppingCart.objects.filter(
-            author=request.user).values_list('recipe', flat=True)
+            user=request.user).values_list('recipe', flat=True)
         ingredients = RecipeIngredient.objects.filter(recipe__in=shopping_cart)
         for recipe_ingredient in ingredients:
             ingredient = recipe_ingredient.ingredient
@@ -127,14 +134,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             recipe = get_object_or_404(Recipe, id=pk)
             if ShoppingCart.objects.filter(
-                author=request.user, recipe=recipe
+                user=request.user, recipe=recipe
                     ).exists():
                 raise UniqueObjectsException
             shopping_cart = ShoppingCart.objects.create(
-                author=request.user,
+                user=request.user,
                 recipe=recipe
             )
-            serializer = FavoriteShoppingSerializer(shopping_cart)
+            serializer = ShortRecipeSerializer(shopping_cart)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':

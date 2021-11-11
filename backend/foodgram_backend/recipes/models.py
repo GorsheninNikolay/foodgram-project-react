@@ -3,6 +3,11 @@ from django.db import models
 from users.models import User
 
 
+class ImageField(models.ImageField):
+    def url_path(self, obj):
+        return obj.image.url
+
+
 class Tag(models.Model):
     name = models.CharField(max_length=200, verbose_name='Название')
     color = models.CharField(default='#49B64E', max_length=7,
@@ -10,7 +15,7 @@ class Tag(models.Model):
     slug = models.SlugField()
 
     class Meta:
-        ordering = ['id', ]
+        ordering = ['slug', ]
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
 
@@ -27,7 +32,7 @@ class Ingredient(models.Model):
         )
 
     class Meta:
-        ordering = ['-id', ]
+        ordering = ['id', ]
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
 
@@ -109,7 +114,7 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
 
     class Meta:
@@ -117,6 +122,6 @@ class ShoppingCart(models.Model):
         verbose_name_plural = 'Список покупок'
         constraints = [
             models.UniqueConstraint(
-                fields=['author', 'recipe'], name='unique_shoppingcart'
+                fields=['user', 'recipe'], name='unique_shoppingcart'
             )
         ]

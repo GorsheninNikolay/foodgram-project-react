@@ -13,7 +13,7 @@ class RecipeIngredientInline(admin.StackedInline):
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeIngredientInline, )
     fieldsets = [
-        (None, {'fields': ['author', 'name', 'image', 'text', 'tags', 'cooking_time']}), # noqa
+        (None, {'fields': ['author', 'name', 'image', 'text', 'tags', 'cooking_time']}),  # noqa
     ]
     list_display = ('id', 'name', 'author', )
     list_filter = ('author', 'name', 'tags', )
@@ -22,7 +22,6 @@ class RecipeAdmin(admin.ModelAdmin):
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'measurement_unit', )
-    list_filter = ('name', )
 
 
 @admin.register(Tag)
@@ -37,9 +36,10 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 @admin.register(ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
-    list_display = ('id', 'author', 'recipe', )
+    list_display = ('id', 'user', 'recipe', )
 
 
 @admin.register(RecipeIngredient)
 class RecipeIngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'ingredient', 'recipe', )
+    list_filter = ('ingredient__name', )
