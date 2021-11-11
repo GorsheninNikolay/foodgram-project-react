@@ -26,8 +26,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def subscribe(self, request, pk=None):
         if request.method == 'GET':
             follow = Follow.objects.create(
-                user=request.user, following=get_object_or_404(User, id=pk)
-            )
+                user=request.user, following=get_object_or_404(User, id=pk))
             user = get_object_or_404(User, id=follow.following.id)
             serializer = UserSerializer(user, context={'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -35,8 +34,7 @@ class UserViewSet(viewsets.ModelViewSet):
         elif request.method == 'DELETE':
             follow = get_object_or_404(
                 Follow, user=request.user,
-                following=get_object_or_404(User, id=pk)
-                )
+                following=get_object_or_404(User, id=pk))
             follow.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -49,24 +47,10 @@ class SubscriptionsViewSet(viewsets.ModelViewSet):
         followings = Follow.objects.filter(
             user=request.user).values_list('following__username', flat=True)
         queryset = self.paginate_queryset(
-            User.objects.filter(username__in=followings)
-            )
+            User.objects.filter(username__in=followings))
         serializer = SubscriptionsSerializer(
-            queryset, many=True, context={'request': request}
-            )
+            queryset, many=True, context={'request': request})
         return self.get_paginated_response(serializer.data)
-
-# class FollowView(viewsets.ModelViewSet):
-#     permission_classes = [IsAuthenticated | IsAdminUser]
-#     serializer_class = SubscriptionsSerializer
-#     queryset = Follow.objects.all()
-
-#     def get_queryset(self, *args, **kwargs):
-#         queryset = super().get_queryset(*args, **kwargs).filter(
-#             user=self.request.user).values_list(
-#                 'following__username', flat=True
-#                 )
-#         return User.objects.filter(username__in=queryset)
 
 
 class ChangePasswordView(generics.UpdateAPIView):
@@ -83,8 +67,7 @@ class ChangePasswordView(generics.UpdateAPIView):
 
         if serializer.is_valid(raise_exception=True):
             self.object.password = serializer.validated_data.get(
-                'new_password'
-                )
+                'new_password')
             self.object.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

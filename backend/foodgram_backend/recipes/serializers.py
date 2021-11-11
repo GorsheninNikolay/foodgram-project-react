@@ -39,8 +39,7 @@ class RecipeIngredientSerializer(ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.CharField(source='ingredient.name')
     measurement_unit = serializers.CharField(
-        source='ingredient.measurement_unit'
-        )
+        source='ingredient.measurement_unit')
     amount = serializers.IntegerField(min_value=1)
 
     class Meta:
@@ -51,9 +50,8 @@ class RecipeIngredientSerializer(ModelSerializer):
 class RecipeSerializer(ModelSerializer):
     tags = TagSerializer(read_only=True, many=True)
     ingredients = RecipeIngredientSerializer(
-        source='ingredient_set', many=True, read_only=True
-        )
-    image = serializers.ImageField()
+        source='ingredient_set', many=True, read_only=True)
+    image = serializers.SerializerMethodField()
     author = UserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -65,17 +63,14 @@ class RecipeSerializer(ModelSerializer):
             raise serializers.ValidationError('Теги должны быть уникальными.')
         if unique_tags[0] < 0:
             raise serializers.ValidationError(
-                'Обнаружено отрицательное значение.'
-                )
+                'Обнаружено отрицательное значение.')
         for ingredient in self.context['request'].data['ingredients']:
             if ingredient in cash_ingredients:
                 raise serializers.ValidationError(
-                    'Ингредиенты должны быть уникальными.'
-                    )
+                    'Ингредиенты должны быть уникальными.')
             if ingredient['id'] < 0 or ingredient['amount'] < 0:
                 raise serializers.ValidationError(
-                    'Обнаружено отрицательное значение.'
-                )
+                    'Обнаружено отрицательное значение.')
             cash_ingredients.append(ingredient)
         return data
 
@@ -91,8 +86,10 @@ class RecipeSerializer(ModelSerializer):
         if request.user is None or not request.user.is_authenticated:
             return False
         return ShoppingCart.objects.filter(
-            user=request.user, recipe=obj
-            ).exists()
+            user=request.user, recipe=obj).exists()
+
+    def get_image(self, obj):
+        return obj.image.url
 
     class Meta:
         model = Recipe
@@ -103,14 +100,12 @@ class RecipeSerializer(ModelSerializer):
 
     def create_or_update_tags_and_ingredients(self, recipe, tags, ingredients):
         recipe.tags.set(Tag.objects.filter(
-            id__in=tags)
-            )
+            id__in=tags))
         for ingredient in ingredients:
             RecipeIngredient.objects.create(
                 ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
                 recipe=recipe,
-                amount=ingredient['amount']
-                )
+                amount=ingredient['amount'])
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')

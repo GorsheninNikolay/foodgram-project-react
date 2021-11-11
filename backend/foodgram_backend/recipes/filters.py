@@ -23,8 +23,7 @@ class RecipeFilter(django_filters.FilterSet):
     def is_favorited_filter(self, queryset, name, value):
         favorites = Favorite.objects.filter(
             recipe__in=queryset, user=self.request.user).values_list(
-                'recipe', flat=True
-                )
+                'recipe', flat=True)
         if value is False:
             return queryset.filter(~Q(id__in=favorites))
         return queryset.filter(id__in=favorites)
@@ -32,8 +31,7 @@ class RecipeFilter(django_filters.FilterSet):
     def is_in_shopping_cart_filter(self, queryset, name, value):
         shopping_cart = ShoppingCart.objects.filter(
             recipe__in=queryset, user=self.request.user).values_list(
-                'recipe', flat=True
-                )
+                'recipe', flat=True)
         if value is False:
             return queryset.filter(~Q(id__in=shopping_cart))
         return queryset.filter(id__in=shopping_cart)

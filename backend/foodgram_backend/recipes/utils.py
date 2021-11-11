@@ -10,6 +10,5 @@ def get_image(data):
         format, imgstr = data['image'].split(';base64,')
         ext = format.split('/')[-1]
         return ContentFile(
-            base64.b64decode(imgstr), name=data['name'] + '.' + ext
-            )
+            base64.b64decode(imgstr), name=data['name'] + '.' + ext)
     return None

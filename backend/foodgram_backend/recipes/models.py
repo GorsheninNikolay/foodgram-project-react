@@ -3,11 +3,6 @@ from django.db import models
 from users.models import User
 
 
-class ImageField(models.ImageField):
-    def url_path(self, obj):
-        return obj.image.url
-
-
 class Tag(models.Model):
     name = models.CharField(max_length=200, verbose_name='Название')
     color = models.CharField(default='#49B64E', max_length=7,
@@ -25,14 +20,12 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=200, verbose_name='Название'
-        )
+        max_length=200, verbose_name='Название')
     measurement_unit = models.CharField(
-        max_length=200, verbose_name='Единицы измерения'
-        )
+        max_length=200, verbose_name='Единицы измерения')
 
     class Meta:
-        ordering = ['id', ]
+        ordering = ['id']
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
 
@@ -44,22 +37,19 @@ class Recipe(models.Model):
     author = models.ForeignKey(User, on_delete=models.SET_NULL,
                                null=True, verbose_name='Автор публикации')
     name = models.CharField(
-        max_length=200, unique=True, verbose_name='Название'
-        )
+        max_length=200, unique=True, verbose_name='Название')
     image = models.ImageField(upload_to='images/', verbose_name='Картинка')
     text = models.TextField(verbose_name='Описание')
     tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(
-        'RecipeIngredient', related_name='ingredient_set'
-    )
+        'RecipeIngredient', related_name='ingredient_set')
     cooking_time = models.PositiveIntegerField(
         validators=[MinValueValidator(
-            1, message='Время приготовления должно быть больше минуты'
-        )],
+            1, message='Время приготовления должно быть больше минуты')],
         verbose_name='Время приготовления в минутах')
 
     class Meta:
-        ordering = ['-id', ]
+        ordering = ['-id']
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -69,17 +59,14 @@ class Recipe(models.Model):
 
 class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(
-        Ingredient, on_delete=models.CASCADE
-        )
+        Ingredient, on_delete=models.CASCADE)
     recipe = models.ForeignKey(
-        Recipe, related_name='ingredient_set', on_delete=models.CASCADE
-        )
+        Recipe, related_name='ingredient_set', on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(
         validators=[MinValueValidator(
             1, message='Количество ингридиентов не может быть ниже 1')],
         default=1,
-        verbose_name='Количество'
-        )
+        verbose_name='Количество')
 
     class Meta:
         ordering = ['-id']
@@ -88,8 +75,7 @@ class RecipeIngredient(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['ingredient', 'recipe'],
-                name='unique_recipe_ingredient'
-                )
+                name='unique_recipe_ingredient')
         ]
 
     def __str__(self):

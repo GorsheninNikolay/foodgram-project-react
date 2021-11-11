@@ -52,14 +52,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         image = get_image(request.data)
         request.data['image'] = image
         serializer = RecipeSerializer(
-            data=request.data, context={'request': request}
-            )
+            data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=True):
             serializer.save(
                 author=request.user,
                 ingredients=request.data['ingredients'],
-                tags=request.data['tags']
-                )
+                tags=request.data['tags'],
+                image=image)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -70,13 +69,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe.image.delete()
         request.data['image'] = image
         serializer = RecipeSerializer(
-            recipe, data=request.data, context={'request': request}
-            )
+            recipe, data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=True):
             serializer.save(
                 ingredients=request.data['ingredients'],
-                tags=request.data['tags']
-                )
+                tags=request.data['tags'],
+                image=image)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -91,19 +89,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             recipe = get_object_or_404(Recipe, id=pk)
             if Favorite.objects.filter(
-                user=request.user, recipe=recipe
-                    ).exists():
+                user=request.user,
+                    recipe=recipe).exists():
                 raise UniqueObjectsException
             favorite = Favorite.objects.create(
-                user=request.user, recipe=recipe
-            )
+                user=request.user, recipe=recipe)
             serializer = ShortRecipeSerializer(favorite)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
             favorite = get_object_or_404(
-                Favorite, user=request.user, recipe=Recipe.objects.get(id=pk)
-            )
+                Favorite, user=request.user, recipe=Recipe.objects.get(id=pk))
             favorite.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -134,20 +130,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             recipe = get_object_or_404(Recipe, id=pk)
             if ShoppingCart.objects.filter(
-                user=request.user, recipe=recipe
-                    ).exists():
+                user=request.user,
+                    recipe=recipe).exists():
                 raise UniqueObjectsException
             shopping_cart = ShoppingCart.objects.create(
                 user=request.user,
-                recipe=recipe
-            )
+                recipe=recipe)
             serializer = ShortRecipeSerializer(shopping_cart)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
             shopping_cart = get_object_or_404(
-                ShoppingCart, recipe=get_object_or_404(Recipe, id=pk)
-                )
+                ShoppingCart, recipe=get_object_or_404(Recipe, id=pk))
             shopping_cart.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
