@@ -1,11 +1,14 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Follow, User
 from .permissions import IsAuthenticatedForDetailOrReadOnly
-from .serializers import PasswordSerializer, UserSerializer
+from .serializers import (PasswordSerializer, SubscriptionsSerializer,
+                          UserSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -17,33 +20,53 @@ class UserViewSet(viewsets.ModelViewSet):
             self.kwargs['pk'] = self.request.user.id
         return User.objects.all()
 
+    @action(detail=True,
+            methods=['GET', 'DELETE'],
+            permission_classes=[IsAuthenticated | IsAdminUser])
+    def subscribe(self, request, pk=None):
+        if request.method == 'GET':
+            follow = Follow.objects.create(
+                user=request.user, following=get_object_or_404(User, id=pk)
+            )
+            user = get_object_or_404(User, id=follow.following.id)
+            serializer = UserSerializer(user, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class FollowView(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated | IsAdminUser]
-    serializer_class = UserSerializer
-    queryset = Follow.objects.all()
-
-    def get_queryset(self, *args, **kwargs):
-        queryset = super().get_queryset(*args, **kwargs).filter(
-            user=self.request.user).values_list(
-                'following__username', flat=True
+        elif request.method == 'DELETE':
+            follow = get_object_or_404(
+                Follow, user=request.user,
+                following=get_object_or_404(User, id=pk)
                 )
-        return User.objects.filter(username__in=queryset)
+            follow.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    def retrieve(self, request, id=None):
-        follow = Follow.objects.create(
-            user=request.user, following=get_object_or_404(User, id=id)
-        )
-        user = get_object_or_404(User, id=follow.following.id)
-        serializer = UserSerializer(user, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def destroy(self, request, id=None):
-        follow = get_object_or_404(
-            Follow, user=request.user,
-            following=get_object_or_404(User, id=id))
-        follow.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+class SubscriptionsViewSet(viewsets.ModelViewSet):
+    pagination_class = PageNumberPagination
+
+    def list(self, request):
+        followings = Follow.objects.filter(
+            user=request.user).values_list('following__username', flat=True)
+        queryset = self.paginate_queryset(
+            User.objects.filter(username__in=followings)
+            )
+        serializer = SubscriptionsSerializer(
+            queryset, many=True, context={'request': request}
+            )
+        return self.get_paginated_response(serializer.data)
+
+# class FollowView(viewsets.ModelViewSet):
+#     permission_classes = [IsAuthenticated | IsAdminUser]
+#     serializer_class = SubscriptionsSerializer
+#     queryset = Follow.objects.all()
+
+#     def get_queryset(self, *args, **kwargs):
+#         queryset = super().get_queryset(*args, **kwargs).filter(
+#             user=self.request.user).values_list(
+#                 'following__username', flat=True
+#                 )
+#         return User.objects.filter(username__in=queryset)
 
 
 class ChangePasswordView(generics.UpdateAPIView):

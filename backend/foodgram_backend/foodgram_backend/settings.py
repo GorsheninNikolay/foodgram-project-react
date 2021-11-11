@@ -55,7 +55,9 @@ TEMPLATES = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+        ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
@@ -68,16 +70,29 @@ WSGI_APPLICATION = 'foodgram_backend.wsgi.application'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
-DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DB_ENGINE'),
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT'),
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.environ.get('DB_ENGINE'),
+#         'NAME': os.environ.get('DB_NAME'),
+#         'USER': os.environ.get('POSTGRES_USER'),
+#         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+#         'HOST': os.environ.get('DB_HOST'),
+#         'PORT': os.environ.get('DB_PORT'),
+#     }
+# }
+
+
+DATABASES = { 
+
+    'default': { 
+
+        'ENGINE': 'django.db.backends.sqlite3', 
+
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), 
+
+    } 
+
+} 
 
 AUTH_PASSWORD_VALIDATORS = [
     {

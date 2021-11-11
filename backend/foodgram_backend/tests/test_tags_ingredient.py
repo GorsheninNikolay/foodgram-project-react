@@ -46,10 +46,10 @@ class TagIngredientsTestCase(APITestCase):
     def test_get_ingredients(self):
         response = self.unathorized_client.get('/api/ingredients/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(len(response.json()['results']) != 0)
-        self.assertEqual(response.json()['results'][0]['id'], 1)
+        self.assertTrue(len(response.json()) != 0)
+        self.assertEqual(response.json()[0]['id'], 1)
         self.assertEqual(
-            response.json()['results'][0]['name'], 'test_ingredient'
+            response.json()[0]['name'], 'test_ingredient'
             )
 
     def test_get_one_ingredient(self):
@@ -63,7 +63,7 @@ class TagIngredientsTestCase(APITestCase):
         response = self.unathorized_client.get('/api/tags/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Tag.objects.all().count(), 1)
-        self.assertEqual(response.json()['results'][0]['name'], 'test_tag')
+        self.assertEqual(response.json()[0]['name'], 'test_tag')
 
     def test_get_one_tag(self):
         response = self.unathorized_client.get('/api/tags/1/')

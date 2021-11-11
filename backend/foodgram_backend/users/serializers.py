@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from recipes.models import Recipe
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
@@ -22,6 +23,39 @@ class UserSerializer(ModelSerializer):
         fields = (
             'email', 'id', 'username', 'first_name',
             'last_name', 'password', 'is_subscribed'
+        )
+
+
+class ShortRecipeSerializer(ModelSerializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    image = serializers.SerializerMethodField()
+    cooking_time = serializers.IntegerField()
+
+    def get_image(self, obj):
+        return obj.image.url
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time', )
+
+
+class SubscriptionsSerializer(UserSerializer):
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    def get_recipes(self, obj):
+        recipes = Recipe.objects.filter(author=obj)
+        return ShortRecipeSerializer(recipes, many=True).data
+
+    def get_recipes_count(self, obj):
+        return Recipe.objects.filter(author=obj).count()
+
+    class Meta:
+        model = User
+        fields = (
+            'email', 'id', 'username', 'first_name',
+            'last_name', 'is_subscribed', 'recipes', 'recipes_count'
         )
 
 

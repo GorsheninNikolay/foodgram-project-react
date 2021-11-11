@@ -155,3 +155,11 @@ class UserTestCase(APITestCase):
         self.assertFalse(Follow.objects.filter(
             user__username='tester', following__username='another').exists()
             )
+
+    def test_subscriptions(self):
+        response = self.client.get(r'/api/users/2/subscribe/')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Follow.objects.all().count(), 1)
+        response = self.client.get(r'/api/users/subscriptions/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(response.json()['results']) != 0)
