@@ -1,4 +1,5 @@
 import os
+import sys
 
 from dotenv import load_dotenv
 
@@ -80,6 +81,10 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT'),
     }
 }
+
+if 'test' in sys.argv:
+    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
+    DATABASES['default']['NAME'] = ':memory:'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
