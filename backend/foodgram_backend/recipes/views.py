@@ -78,6 +78,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def partial_update(self, request, pk=None):
+        recipe = get_object_or_404(Recipe, id=pk)
+        self.check_object_permissions(request, recipe)
+        image = get_image(request.data)
+        recipe.image.delete()
+        request.data['image'] = image
+        serializer = RecipeSerializer(
+            recipe, data=request.data, context={'request': request})
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(
+                ingredients=request.data['ingredients'],
+                tags=request.data['tags'],
+                image=image)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def perform_destroy(self, instance):
         os.remove(instance.image.path)
         instance.delete()
