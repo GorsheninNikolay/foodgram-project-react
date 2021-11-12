@@ -13,7 +13,8 @@ class RecipeIngredientInline(admin.StackedInline):
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeIngredientInline, )
     fieldsets = [
-        (None, {'fields': ['author', 'name', 'image', 'text', 'tags', 'cooking_time']}),  # noqa
+        (None, {'fields': ['author', 'name', 'image',
+                           'text', 'tags', 'cooking_time']}),
     ]
     list_display = ('id', 'name', 'author', )
     list_filter = ('author', 'name', 'tags', )

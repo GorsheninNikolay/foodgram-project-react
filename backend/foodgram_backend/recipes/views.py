@@ -9,26 +9,21 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .exceptions import UniqueObjectsException
-from .filters import RecipeFilter
+from .filters import IngredientFilter, RecipeFilter
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 from .pdf_file import create_shopping_cart
 from .permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .serializers import (IngredientSerializer, RecipeSerializer,
                           ShortRecipeSerializer, TagSerializer)
-from .utils import get_image
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
+    queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = IngredientFilter
     pagination_class = None
-
-    def get_queryset(self):
-        queryset = Ingredient.objects.all()
-        name = self.request.query_params.get('search')
-        if name is not None:
-            return queryset.filter(name__icontains=name.lower())
-        return queryset
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -45,54 +40,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = RecipeFilter
 
-    def create(self, request):
-        """ Из-за serializers.ImageField не могу реализовать метод create в сериализаторе # noqa
-        Сериализатор требует именно картинку, также пробовал Base64Field, но безуспешно
-        """
-        image = get_image(request.data)
-        request.data['image'] = image
-        serializer = RecipeSerializer(
-            data=request.data, context={'request': request})
-        if serializer.is_valid(raise_exception=True):
-            serializer.save(
-                author=request.user,
-                ingredients=request.data['ingredients'],
-                tags=request.data['tags'],
-                image=image)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            tags=self.request.data['tags'],
+            ingredients=self.request.data['ingredients']
+        )
 
-    def update(self, request, pk=None):
-        recipe = get_object_or_404(Recipe, id=pk)
-        self.check_object_permissions(request, recipe)
-        image = get_image(request.data)
-        recipe.image.delete()
-        request.data['image'] = image
-        serializer = RecipeSerializer(
-            recipe, data=request.data, context={'request': request})
-        if serializer.is_valid(raise_exception=True):
-            serializer.save(
-                ingredients=request.data['ingredients'],
-                tags=request.data['tags'],
-                image=image)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def partial_update(self, request, pk=None):
-        recipe = get_object_or_404(Recipe, id=pk)
-        self.check_object_permissions(request, recipe)
-        image = get_image(request.data)
-        recipe.image.delete()
-        request.data['image'] = image
-        serializer = RecipeSerializer(
-            recipe, data=request.data, context={'request': request})
-        if serializer.is_valid(raise_exception=True):
-            serializer.save(
-                ingredients=request.data['ingredients'],
-                tags=request.data['tags'],
-                image=image)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def perform_update(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            tags=self.request.data['tags'],
+            ingredients=self.request.data['ingredients']
+        )
 
     def perform_destroy(self, instance):
         os.remove(instance.image.path)

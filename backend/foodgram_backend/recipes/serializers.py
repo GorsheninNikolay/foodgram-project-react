@@ -1,3 +1,9 @@
+import base64
+import imghdr
+import os
+
+import six
+from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
@@ -7,6 +13,38 @@ from users.serializers import UserSerializer
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
+
+# Когда я выполняю команду isort . из директории foodgram_backend
+# А затем проверяю проект python -m flake8, то пишет, что все хорошо
+# Но когда я начинаю заходить в директории users, recipes и прописывать команду isort .  # noqa
+# То импорты уже ставятся по-другому и flake8 выдает недочеты
+
+
+class Base64ImageField(serializers.ImageField):
+    # Работает! Спасибо!
+
+    def to_internal_value(self, data):
+
+        if isinstance(data, six.string_types):
+            if 'data:' in data and ';base64,' in data:
+                header, data = data.split(';base64,')
+
+            try:
+                decoded_file = base64.b64decode(data)
+            except TypeError:
+                self.fail('invalid_image')
+
+            file_name = self.context['request'].data['name']
+            file_extension = self.get_file_extension(file_name, decoded_file)
+            complete_file_name = '%s.%s' % (file_name, file_extension, )
+            data = ContentFile(decoded_file, name=complete_file_name)
+
+        return super(Base64ImageField, self).to_internal_value(data)
+
+    def get_file_extension(self, file_name, decoded_file):
+        extension = imghdr.what(file_name, decoded_file)
+
+        return 'jpg' if extension == 'jpeg' else extension
 
 
 class TagSerializer(ModelSerializer):
@@ -52,27 +90,24 @@ class RecipeSerializer(ModelSerializer):
     tags = TagSerializer(read_only=True, many=True)
     ingredients = RecipeIngredientSerializer(
         source='ingredient_set', many=True, read_only=True)
-    image = serializers.SerializerMethodField()
+    image = Base64ImageField()
     author = UserSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
     def validate(self, data):
         unique_tags = list(set(self.context['request'].data['tags']))
-        cash_ingredients = []
+        ingredients = []
         if unique_tags != self.context['request'].data['tags']:
             raise serializers.ValidationError('Теги должны быть уникальными.')
-        if unique_tags[0] < 0:
-            raise serializers.ValidationError(
-                'Обнаружено отрицательное значение.')
         for ingredient in self.context['request'].data['ingredients']:
-            if ingredient in cash_ingredients:
+            if ingredient in ingredients:
                 raise serializers.ValidationError(
                     'Ингредиенты должны быть уникальными.')
-            if ingredient['id'] < 0 or ingredient['amount'] < 0:
+            if ingredient['amount'] < 0:
                 raise serializers.ValidationError(
                     'Обнаружено отрицательное значение.')
-            cash_ingredients.append(ingredient)
+            ingredients.append(ingredient)
         return data
 
     def get_is_favorited(self, obj) -> bool:
@@ -89,8 +124,11 @@ class RecipeSerializer(ModelSerializer):
         return ShoppingCart.objects.filter(
             user=request.user, recipe=obj).exists()
 
-    def get_image(self, obj):
-        return obj.image.url
+    def to_representation(self, obj):
+        # Отдаю относительную ссылку на картинку, чтобы nginx смог поймать ее
+        result = super().to_representation(obj)
+        result['image'] = obj.image.url
+        return result
 
     class Meta:
         model = Recipe
@@ -119,7 +157,7 @@ class RecipeSerializer(ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         RecipeIngredient.objects.filter(recipe=instance).delete()
+        os.remove(f'media/{instance.image}')
         self.create_or_update_tags_and_ingredients(instance, tags, ingredients)
         super().update(instance, validated_data)
-        instance.save()
         return instance

@@ -16,14 +16,11 @@ class Authenticator(viewsets.ViewSet):
     def login(self, request):
         """ Создание токена/аутентификация """
         serializer = TokenSerializer(data=request.data)
-        if serializer.is_valid():
-            user = get_object_or_404(
-                User, **request.data
-            )
-            token = Token.objects.create(user=user)
-            response = {'auth_token': str(token.key)}
-            return Response(response, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        user = get_object_or_404(User, **request.data)
+        token = Token.objects.create(user=user)
+        response = {'auth_token': str(token.key)}
+        return Response(response, status=status.HTTP_201_CREATED)
 
     def logout(self, request):
         """ Удаление токена """

@@ -1,8 +1,21 @@
 import django_filters
 from django.db.models import Q
 
-from recipes.models import Favorite, Recipe, ShoppingCart
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
 from users.models import User
+
+
+class IngredientFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(method='name_filter')
+
+    class Meta:
+        model = Ingredient
+        fields = ('name', )
+
+    def name_filter(self, queryset, name, value):
+        print(name, value)
+        return queryset.filter(
+            name__contains=value.lower())
 
 
 class RecipeFilter(django_filters.FilterSet):

@@ -64,10 +64,8 @@ class ChangePasswordView(generics.UpdateAPIView):
     def post(self, request):
         self.object = self.get_object()
         serializer = self.get_serializer(data=request.data)
-
-        if serializer.is_valid(raise_exception=True):
-            self.object.password = serializer.validated_data.get(
-                'new_password')
-            self.object.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        self.object.password = serializer.validated_data.get(
+            'new_password')
+        self.object.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)

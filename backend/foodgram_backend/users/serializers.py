@@ -1,4 +1,3 @@
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
@@ -14,9 +13,7 @@ class UserSerializer(ModelSerializer):
         user = self.context.get('request').user
         if user is None or not user.is_authenticated:
             return False
-        user = get_object_or_404(User, username=user)
-        following = get_object_or_404(User, username=obj.username)
-        return Follow.objects.filter(user=user, following=following).exists()
+        return Follow.objects.filter(user=user, following=obj).exists()
 
     class Meta:
         model = User
