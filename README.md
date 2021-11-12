@@ -19,7 +19,7 @@ cd ..
 
 3. Клонирование репозитория:
 ```
-git clone https://github.com/GorsheninNikolay/foodgram_project_r
+git clone https://github.com/GorsheninNikolay/foodgram_project-react
 ```
 4. Перейти в каталог:
 ```

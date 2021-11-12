@@ -10,16 +10,7 @@ services:
       - ../backend/foodgram_backend/.env
   
   web:
-    build: ../backend/foodgram_backend
-    restart: always
-    ports:
-      - "8000:8000" 
-    volumes:
-      - media_value:/code/media/images/
-    depends_on:
-      - db
-    env_file:
-      - ../backend/foodgram_backend/.env
+    image: gorsheninnikolay/foodgram_backend
 
   frontend:
     build:
