@@ -13,7 +13,6 @@ class IngredientFilter(django_filters.FilterSet):
         fields = ('name', )
 
     def name_filter(self, queryset, name, value):
-        print(name, value)
         return queryset.filter(
             name__contains=value.lower())
 
@@ -37,7 +36,7 @@ class RecipeFilter(django_filters.FilterSet):
         favorites = Favorite.objects.filter(
             recipe__in=queryset, user=self.request.user).values_list(
                 'recipe', flat=True)
-        if value is False:
+        if not value:
             return queryset.filter(~Q(id__in=favorites))
         return queryset.filter(id__in=favorites)
 
@@ -45,6 +44,6 @@ class RecipeFilter(django_filters.FilterSet):
         shopping_cart = ShoppingCart.objects.filter(
             recipe__in=queryset, user=self.request.user).values_list(
                 'recipe', flat=True)
-        if value is False:
+        if not value:
             return queryset.filter(~Q(id__in=shopping_cart))
         return queryset.filter(id__in=shopping_cart)
