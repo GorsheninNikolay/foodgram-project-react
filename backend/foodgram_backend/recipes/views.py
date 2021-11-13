@@ -1,7 +1,6 @@
 import os
 
 from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import JSONParser, MultiPartParser
@@ -9,7 +8,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .exceptions import UniqueObjectsException
-from .filters import IngredientFilter, RecipeFilter
+from .filters import IngredientFilter
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 from .pdf_file import create_shopping_cart
@@ -37,8 +36,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
     parser_classes = (MultiPartParser, JSONParser, )
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = RecipeFilter
 
     def perform_create(self, serializer):
         serializer.save(
