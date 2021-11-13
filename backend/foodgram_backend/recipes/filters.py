@@ -27,7 +27,6 @@ class RecipeFilter(django_filters.FilterSet):
     is_in_shopping_cart = django_filters.BooleanFilter(
         label='is_in_shopping_cart', method='is_in_shopping_cart_filter'
     )
-    limit = django_filters.NumberFilter(label='limit', method='recipe_limit')
 
     class Meta:
         model = Recipe
@@ -49,6 +48,3 @@ class RecipeFilter(django_filters.FilterSet):
         if not value:
             return queryset.filter(~Q(id__in=shopping_cart))
         return queryset.filter(id__in=shopping_cart)
-
-    def recipe_limit(self, queryset, name, value):
-        return queryset[:value]
