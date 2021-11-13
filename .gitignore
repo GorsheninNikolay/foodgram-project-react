@@ -134,11 +134,5 @@ dmypy.json
 # media
 backend/foodgram_backend/media/
 
-# static
-backend/foodgram_backend/static/
-
 # env_vscode
 .vscode/
-
-# frontend
-frontend/
