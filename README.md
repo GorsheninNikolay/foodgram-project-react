@@ -4,6 +4,7 @@
 ip: http://84.201.153.151
 
 login:admin
+
 password: 7v4-9pK-uYr-DuM
 
 # praktikum_new_diplom
