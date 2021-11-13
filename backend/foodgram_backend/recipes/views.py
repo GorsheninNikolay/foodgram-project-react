@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .exceptions import UniqueObjectsException
-from .filters import IngredientFilter
+from .filters import IngredientFilter, RecipeFilter
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 from .paginator import BaseLimitPaginator
@@ -37,6 +37,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     pagination_class = BaseLimitPaginator
+    filter_backends = RecipeFilter
     permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
     parser_classes = (MultiPartParser, JSONParser, )
 
