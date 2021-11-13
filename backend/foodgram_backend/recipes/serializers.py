@@ -120,7 +120,8 @@ class RecipeSerializer(ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         RecipeIngredient.objects.filter(recipe=instance).delete()
-        os.remove(f'media/{instance.image}')
+        if self.context['request'].method == 'PUT':
+            os.remove(instance.image.path)
         self.create_or_update_tags_and_ingredients(instance, tags, ingredients)
         super().update(instance, validated_data)
         return instance

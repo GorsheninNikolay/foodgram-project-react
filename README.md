@@ -3,6 +3,8 @@
 
 ip: http://84.201.153.151
 
+ip_admin: http://84.201.153.151/admin/
+
 login: admin
 
 password: 7v4-9pK-uYr-DuM
