@@ -27,7 +27,7 @@ class RecipeFilter(django_filters.FilterSet):
     is_in_shopping_cart = django_filters.BooleanFilter(
         label='is_in_shopping_cart', method='is_in_shopping_cart_filter'
     )
-    limit = django_filters.NumberFilter(method='recipe_limit')
+    limit = django_filters.NumberFilter(label='limit', method='recipe_limit')
 
     class Meta:
         model = Recipe
