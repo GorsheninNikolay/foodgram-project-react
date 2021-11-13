@@ -1,10 +1,12 @@
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
+from .filters import SubscriptionsFilter
 from .models import Follow, User
 from .permissions import IsAuthenticatedForDetailOrReadOnly
 from .serializers import (PasswordSerializer, SubscriptionsSerializer,
@@ -42,15 +44,15 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class SubscriptionsViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = SubscriptionsFilter
+    serializer_class = SubscriptionsSerializer
 
-    def list(self, request):
+    def get_queryset(self):
+        queryset = User.objects.all()
         followings = Follow.objects.filter(
-            user=request.user).values_list('following__username', flat=True)
-        queryset = self.paginate_queryset(
-            User.objects.filter(username__in=followings))
-        serializer = SubscriptionsSerializer(
-            queryset, many=True, context={'request': request})
-        return self.get_paginated_response(serializer.data)
+            user=self.request.user).values_list('following', flat=True)
+        return queryset.filter(id__in=followings)
 
 
 class ChangePasswordView(generics.UpdateAPIView):
