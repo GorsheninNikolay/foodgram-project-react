@@ -1,3 +1,6 @@
+![foodgram-project-react_workflow](https://github.com/GorsheninNikolay/foodgram-project-react/actions/workflows/docker-image.yml/badge.svg)
+![foodgram-project-react_coverage](https://github.com/GorsheninNikolay/foodgram-project-react/blob/master/backend/foodgram_backend/coverage.svg)
+
 # praktikum_new_diplom
 
 
