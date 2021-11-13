@@ -27,10 +27,12 @@ class RecipeFilter(django_filters.FilterSet):
     is_in_shopping_cart = django_filters.BooleanFilter(
         label='is_in_shopping_cart', method='is_in_shopping_cart_filter'
     )
+    limit = django_filters.NumberFilter(method='recipe_limit')
 
     class Meta:
         model = Recipe
-        fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart')
+        fields = ('author', 'tags', 'is_favorited',
+                  'is_in_shopping_cart', 'limit', )
 
     def is_favorited_filter(self, queryset, name, value):
         favorites = Favorite.objects.filter(
@@ -47,3 +49,6 @@ class RecipeFilter(django_filters.FilterSet):
         if not value:
             return queryset.filter(~Q(id__in=shopping_cart))
         return queryset.filter(id__in=shopping_cart)
+
+    def recipe_limit(self, queryset, name, value):
+        return queryset[:value]
