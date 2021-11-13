@@ -19,6 +19,13 @@ class RecipeAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'author', )
     list_filter = ('author', 'name', 'tags', )
 
+    def save_model(self, request, obj, form, change):
+        """Чтобы nginx по имени рецепта нашел картинку,
+        динамически переименовываю файл"""
+        image_name, image_format = str(obj.image).split('.')
+        obj.image.name = str(obj.name) + '.' + image_format
+        return super().save_model(request, obj, form, change)
+
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):

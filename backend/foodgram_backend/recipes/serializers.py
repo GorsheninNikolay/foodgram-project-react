@@ -61,10 +61,7 @@ class RecipeSerializer(ModelSerializer):
     is_in_shopping_cart = serializers.SerializerMethodField()
 
     def validate(self, data):
-        unique_tags = list(set(self.context['request'].data['tags']))
         ingredients = []
-        if unique_tags != self.context['request'].data['tags']:
-            raise serializers.ValidationError('Теги должны быть уникальными.')
         for ingredient in self.context['request'].data['ingredients']:
             if ingredient in ingredients:
                 raise serializers.ValidationError(
