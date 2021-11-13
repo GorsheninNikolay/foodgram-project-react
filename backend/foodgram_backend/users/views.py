@@ -2,11 +2,10 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from .filters import SubscriptionsFilter
+from recipes.paginator import BaseLimitPaginator
 from .models import Follow, User
 from .permissions import IsAuthenticatedForDetailOrReadOnly
 from .serializers import (PasswordSerializer, SubscriptionsSerializer,
@@ -16,6 +15,7 @@ from .serializers import (PasswordSerializer, SubscriptionsSerializer,
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticatedForDetailOrReadOnly]
+    pagination_class = BaseLimitPaginator
 
     def get_queryset(self):
         if self.kwargs.get('pk') == 'me':
@@ -43,9 +43,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class SubscriptionsViewSet(viewsets.ModelViewSet):
-    pagination_class = PageNumberPagination
+    pagination_class = BaseLimitPaginator
     filter_backends = [DjangoFilterBackend]
-    filterset_class = SubscriptionsFilter
     serializer_class = SubscriptionsSerializer
 
     def get_queryset(self):
