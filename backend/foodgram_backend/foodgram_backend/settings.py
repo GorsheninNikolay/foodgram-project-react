@@ -64,7 +64,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.PageNumberPagination',
-        'PAGE_SIZE': 7,
+        'PAGE_SIZE': 10,
 }
 
 WSGI_APPLICATION = 'foodgram_backend.wsgi.application'
