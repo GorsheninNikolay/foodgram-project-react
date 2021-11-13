@@ -1,6 +1,11 @@
 ![foodgram-project-react_workflow](https://github.com/GorsheninNikolay/foodgram-project-react/actions/workflows/docker-image.yml/badge.svg)
 ![foodgram-project-react_coverage](https://github.com/GorsheninNikolay/foodgram-project-react/blob/master/backend/foodgram_backend/coverage.svg)
 
+ip: http://84.201.153.151
+
+login:admin
+password: 7v4-9pK-uYr-DuM
+
 # praktikum_new_diplom
 
 
