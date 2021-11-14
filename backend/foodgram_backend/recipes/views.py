@@ -120,7 +120,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         if request.method == 'DELETE':
             shopping_cart = get_object_or_404(
-                ShoppingCart, recipe=get_object_or_404(Recipe, id=pk))
+                ShoppingCart,
+                recipe=get_object_or_404(Recipe, id=pk),
+                user=request.user)
             shopping_cart.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
