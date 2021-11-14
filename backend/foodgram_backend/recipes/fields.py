@@ -2,6 +2,7 @@ import base64
 import imghdr
 
 import six
+
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 

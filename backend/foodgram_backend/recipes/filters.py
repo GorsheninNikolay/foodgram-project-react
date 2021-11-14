@@ -1,8 +1,8 @@
 import django_filters
 from django.db.models import Q
 
-from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
 from users.models import User
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
 
 
 class IngredientFilter(django_filters.FilterSet):
@@ -14,7 +14,7 @@ class IngredientFilter(django_filters.FilterSet):
 
     def name_filter(self, queryset, name, value):
         return queryset.filter(
-            name__contains=value.lower())
+            Q(name__startswith=value.lower()) | Q(name__in=value.lower()))
 
 
 class RecipeFilter(django_filters.FilterSet):

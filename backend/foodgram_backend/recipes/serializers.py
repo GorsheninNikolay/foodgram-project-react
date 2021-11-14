@@ -6,7 +6,6 @@ from rest_framework.serializers import ModelSerializer
 
 from users.models import User
 from users.serializers import UserSerializer
-
 from .fields import Base64ImageField
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
