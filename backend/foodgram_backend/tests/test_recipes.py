@@ -241,7 +241,4 @@ class RecipeTestCase(APITestCase):
     def test_download_shopping_cart(self):
         self.client.get(r'/api/recipes/1/shopping_cart/')
         response = self.client.get(r'/api/recipes/download_shopping_cart/')
-        self.assertTrue(
-            b'test_ingredient (test_measurment) -- 10' in response.content
-            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
