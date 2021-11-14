@@ -1,8 +1,9 @@
 from django.urls import include, path
+
 from rest_framework import routers
 
-from users.auth_token import Authenticator
 from .views import IngredientViewSet, RecipeViewSet, TagViewSet
+from users.auth_token import Authenticator
 
 router = routers.SimpleRouter()
 router.register(r'tags', TagViewSet, basename='tags')
