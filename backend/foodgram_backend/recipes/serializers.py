@@ -1,14 +1,33 @@
 import os
 
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
+from django.shortcuts import get_object_or_404
 
 from .fields import Base64ImageField
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 from users.models import User
 from users.serializers import UserSerializer
+
+"""Сначала был такой конфиг для isort:
+
+[isort]
+default_section = THIRDPARTY
+known_first_party = foodgram_backend
+known_django = django
+sections = FUTURE,STDLIB,THIRDPARTY,DJANGO,LOCALFOLDER,FIRSTPARTY
+no_lines_before=FIRSTPARTY
+
+Делал по данной документации:
+https://djangodoc.ru/3.1/internals/contributing/writing-code/coding-style/
+
+
+По Вашим рекомендациям изменил на:
+sections = FUTURE,STDLIB,THIRDPARTY,DJANGO,LOCALFOLDER,FIRSTPARTY
+no_lines_before=FIRSTPARTY,DJANGO
+Но не думаю, что это по PEP8, немного запутался...
+"""
 
 
 class TagSerializer(ModelSerializer):
