@@ -1,5 +1,7 @@
 ![foodgram-project-react_workflow](https://github.com/GorsheninNikolay/foodgram-project-react/actions/workflows/docker-image.yml/badge.svg)
 ![foodgram-project-react_coverage](https://github.com/GorsheninNikolay/foodgram-project-react/blob/master/backend/foodgram_backend/coverage.svg)
+[![PEP8](https://img.shields.io/badge/code%20style-pep8-orange.svg)](https://www.python.org/dev/peps/pep-0008/)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 ip: http://84.201.153.151
 
