@@ -1,10 +1,10 @@
 import base64
 import imghdr
 
-from django.core.files.base import ContentFile
-
 import six
 from rest_framework import serializers
+
+from django.core.files.base import ContentFile
 
 
 class Base64ImageField(serializers.ImageField):

@@ -1,6 +1,6 @@
-from django.urls import include, path
-
 from rest_framework import routers
+
+from django.urls import include, path
 
 from .views import IngredientViewSet, RecipeViewSet, TagViewSet
 from users.auth_token import Authenticator

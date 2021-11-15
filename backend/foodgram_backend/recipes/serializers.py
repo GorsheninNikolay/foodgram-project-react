@@ -1,9 +1,9 @@
 import os
 
-from django.shortcuts import get_object_or_404
-
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
+
+from django.shortcuts import get_object_or_404
 
 from .fields import Base64ImageField
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
