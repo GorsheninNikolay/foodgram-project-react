@@ -1,8 +1,7 @@
+from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient, APITestCase
-
-from django.db import IntegrityError, transaction
 
 from recipes.exceptions import SubscribeOnYourSelf, UniqueObjectDoesntWork
 from users.models import Follow, User

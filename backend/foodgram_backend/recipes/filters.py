@@ -1,6 +1,5 @@
-import django_filters
-
 from django.db.models import Q
+import django_filters
 
 from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart
 from users.models import User
