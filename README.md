@@ -5,7 +5,7 @@
 [![PEP8](https://img.shields.io/badge/code%20style-pep8-orange.svg)](https://www.python.org/dev/peps/pep-0008/)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
-Данный проект представляет собой сайт "Продуктовый помощник. Моя задача состояла в написании API и упаковке проекта в Docker, а также развертывание на удаленном сервере.
+Данный проект представляет собой сайт "Продуктовый помощник". Моя задача состояла в написании API и упаковке проекта в Docker, а также развертывание на удаленном сервере.
 
 Подробнее про API можно прочитать в документации после запуска проекта http://127.0.0.1/api/docs/
 
